@@ -180,7 +180,7 @@ export default function StudyPlanner() {
                     onClick={() => setActiveWeek(week.week_number)}
                     className={`px-4 py-2 text-xs font-semibold rounded-xl transition-all duration-150 ${
                       activeWeek === week.week_number
-                        ? "bg-primary text-text-primary"
+                        ? "bg-primary text-white"
                         : "text-text-secondary hover:bg-bg-card-hover"
                     }`}
                   >
@@ -420,7 +420,7 @@ export default function StudyPlanner() {
 
             <button
               type="submit"
-              className="w-full bg-primary hover:bg-primary-hover font-semibold text-sm text-text-primary py-3 rounded-xl shadow-lg shadow-primary/20 transition cursor-pointer"
+              className="w-full bg-primary hover:bg-primary-hover font-semibold text-sm text-white py-3 rounded-xl shadow-lg shadow-primary/20 transition cursor-pointer"
             >
               Compose Study Schedule
             </button>

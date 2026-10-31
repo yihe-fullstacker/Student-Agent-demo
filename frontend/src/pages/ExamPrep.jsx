@@ -109,7 +109,7 @@ export default function ExamPrep() {
       const parts = line.split(/(\*\*.*?\*\*)/g);
       const formattedLine = parts.map((part, pIdx) => {
         if (part.startsWith("**") && part.endsWith("**")) {
-          return <strong key={pIdx} className="text-white font-bold">{part.slice(2, -2)}</strong>;
+          return <strong key={pIdx} className="font-bold">{part.slice(2, -2)}</strong>;
         }
         return part;
       });
@@ -383,7 +383,7 @@ export default function ExamPrep() {
 
             <button
               type="submit"
-              className="w-full bg-primary hover:bg-primary-hover font-semibold text-sm text-text-primary py-3 rounded-xl shadow-lg shadow-primary/20 transition cursor-pointer"
+              className="w-full bg-primary hover:bg-primary-hover font-semibold text-sm text-white py-3 rounded-xl shadow-lg shadow-primary/20 transition cursor-pointer"
             >
               Compose Exam Prep Guide
             </button>

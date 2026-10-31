@@ -99,7 +99,7 @@ export default function Settings() {
 
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover font-semibold text-xs text-text-primary py-2.5 rounded-xl shadow-md transition cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover font-semibold text-xs text-white py-2.5 rounded-xl shadow-md transition cursor-pointer"
             >
               {saved ? (
                 <>
@@ -145,7 +145,7 @@ export default function Settings() {
           <div className="flex gap-3 pt-4 border-t border-border-card/25">
             <button
               onClick={handleSave}
-              className="flex-1 bg-primary hover:bg-primary-hover font-semibold text-xs text-text-primary py-2.5 rounded-xl transition cursor-pointer"
+              className="flex-1 bg-primary hover:bg-primary-hover font-semibold text-xs text-white py-2.5 rounded-xl transition cursor-pointer"
             >
               {saved ? "Updated!" : "Update API Key"}
             </button>

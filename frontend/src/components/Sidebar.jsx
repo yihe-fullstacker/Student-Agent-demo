@@ -71,7 +71,7 @@ export default function Sidebar({ currentPage, setCurrentPage, isOpen, toggleSid
                 }}
                 className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
                   isActive 
-                    ? "bg-primary text-text-primary shadow-lg shadow-primary/25" 
+                    ? "bg-primary text-white shadow-lg shadow-primary/25" 
                     : "text-text-secondary hover:bg-bg-card-hover hover:text-text-primary"
                 }`}
               >

@@ -93,7 +93,7 @@ export default function ChatBot() {
     const parts = text.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, index) => {
       if (part.startsWith("**") && part.endsWith("**")) {
-        return <strong key={index} className="text-white font-semibold">{part.slice(2, -2)}</strong>;
+        return <strong key={index} className="font-semibold">{part.slice(2, -2)}</strong>;
       }
       return part;
     });
@@ -138,7 +138,7 @@ export default function ChatBot() {
                 <div 
                   className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                     msg.role === "user" 
-                      ? "bg-primary text-text-primary rounded-br-none" 
+                      ? "bg-primary text-white rounded-br-none" 
                       : "bg-bg-card-hover/70 text-text-secondary border border-border-card/30 rounded-bl-none"
                   }`}
                 >
@@ -199,7 +199,7 @@ export default function ChatBot() {
       {/* Floating Action Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-text-primary shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-transform duration-200 glow-primary"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-transform duration-200 glow-primary"
       >
         {isOpen ? <X className="h-6 w-6" /> : <MessageSquare className="h-6 w-6" />}
       </button>

@@ -331,7 +331,7 @@ export default function ProjectRecommend() {
 
             <button
               type="submit"
-              className="w-full bg-primary hover:bg-primary-hover font-semibold text-sm text-text-primary py-3 rounded-xl shadow-lg shadow-primary/20 transition cursor-pointer"
+              className="w-full bg-primary hover:bg-primary-hover font-semibold text-sm text-white py-3 rounded-xl shadow-lg shadow-primary/20 transition cursor-pointer"
             >
               Generate Portfolio Ideas
             </button>
