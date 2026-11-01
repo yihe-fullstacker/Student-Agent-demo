@@ -1,7 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { Menu, Bell, Sparkles, Key, AlertTriangle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Menu, Sparkles, AlertTriangle, LogOut } from "lucide-react";
+import { useAuth } from "../auth/AuthContext";
+import { PATHS } from "../routes/paths";
 
 export default function Header({ currentPage, toggleSidebar }) {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    logout();
+    navigate(PATHS.HOME, { replace: true });
+  };
   const [hasApiKey, setHasApiKey] = useState(false);
   const [studentName, setStudentName] = useState("Success Explorer");
 
@@ -87,6 +96,16 @@ export default function Header({ currentPage, toggleSidebar }) {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs">
             {studentName.charAt(0).toUpperCase()}
           </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            title="退出登录"
+            aria-label="退出登录"
+            className="ml-1 flex items-center gap-1 rounded-lg border border-border-card px-2 py-1.5 text-xs text-text-secondary hover:bg-bg-card-hover hover:text-text-primary"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">退出</span>
+          </button>
         </div>
       </div>
     </header>

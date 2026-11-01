@@ -1,18 +1,10 @@
-import { Routes, Route } from "react-router-dom";
-import Landing from "./pages/Landing";
-import AppShell from "./components/AppShell";
+import { AuthProvider } from "./auth/AuthContext";
+import AppRoutes from "./routes";
 
 export default function App() {
   return (
-    <Routes>
-      {/* Marketing landing page */}
-      <Route path="/" element={<Landing />} />
-
-      {/* Existing application shell */}
-      <Route path="/app/*" element={<AppShell />} />
-
-      {/* Fallback */}
-      <Route path="*" element={<Landing />} />
-    </Routes>
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   );
 }

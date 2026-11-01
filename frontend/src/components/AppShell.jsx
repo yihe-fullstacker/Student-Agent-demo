@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { PATHS, appPath, sectionIdFromSegment } from "../routes/paths";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import ChatBot from "./ChatBot";
@@ -13,12 +15,18 @@ import ProjectRecommend from "../pages/ProjectRecommend";
 import Settings from "../pages/Settings";
 
 export default function AppShell() {
-  const [currentPage, setCurrentPage] = useState("home");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const segment = location.pathname.replace(/^\/app\/?/, "").split("/")[0];
+  const currentPage = sectionIdFromSegment(segment);
+  const setCurrentPage = (id) => navigate(appPath(id));
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+
+  if (!currentPage) return <Navigate to={PATHS.APP} replace />;
 
   const renderActivePage = () => {
     switch (currentPage) {
