@@ -12,6 +12,28 @@ import {
 } from "lucide-react";
 import { apiService } from "../services/api";
 
+const translateGeneratedText = (text) => {
+  if (!text) return text;
+
+  const replacements = [
+    [/^Master (.+) and complete practice exercises\.$/i, "掌握 $1，并完成练习题。"],
+    [/^Read study guides or textbooks on (.+)$/i, "阅读关于 $1 的学习指南或教材"],
+    [/^Solve 5 practice problems on (.+)$/i, "完成 5 道关于 $1 的练习题"],
+    [/^Write summary notes for (.+)$/i, "为 $1 整理总结笔记"],
+    [/^Complete fundamentals of (.+) and solve introductory assignments\.$/i, "完成 $1 的基础内容并解答入门练习。"],
+    [/^Complete review and exercises for weak topics: (.+)\.$/i, "复习并完成以下薄弱主题的练习：$1。"],
+    [/^Achieve >80% on mock quizzes and complete the revision checklist\.$/i, "模拟测验正确率达到 80% 以上，并完成复习清单。"],
+    [/^Review summary notes for all key chapters of (.+)$/i, "复习 $1 各重点章节的总结笔记"],
+    [/^Spend extra time reviewing notes on (.+)$/i, "额外安排时间复习以下主题笔记：$1"],
+    [/^Take at least two full-length mock exams$/i, "至少完成两套完整的模拟考试"],
+    [/^Ensure all formulas and definitions are memorized$/i, "确保熟记所有公式和定义"],
+    [/^Review mistake logs from practice quizzes$/i, "回顾练习测验中的错题记录"],
+  ];
+
+  const matched = replacements.find(([pattern]) => pattern.test(text));
+  return matched ? text.replace(matched[0], matched[1]) : text;
+};
+
 export default function StudyPlanner() {
   // Form state
   const [subject, setSubject] = useState("");
@@ -29,11 +51,11 @@ export default function StudyPlanner() {
   const [completedTasks, setCompletedTasks] = useState([]); // Array of strings: "week-day"
 
   const loadingMessages = [
-    "Scaffolding calendar grids...",
-    "Injecting topic guidelines...",
-    "Structuring weak points distribution...",
-    "Generating study activities checklist...",
-    "Ready!"
+    "正在搭建学习日历...",
+    "正在整理主题学习指南...",
+    "正在分配重点与薄弱内容...",
+    "正在生成学习活动清单...",
+    "准备完成！"
   ];
 
   // Load existing plan from local storage on mount
@@ -107,7 +129,7 @@ export default function StudyPlanner() {
       localStorage.setItem("planner_subject", subject);
     } catch (error) {
       console.error(error);
-      alert("Failed to connect to agent. Please verify key or try again.");
+      alert("无法连接智能代理，请检查密钥或稍后重试。");
     } finally {
       setLoading(false);
     }
@@ -127,7 +149,7 @@ export default function StudyPlanner() {
   };
 
   const deletePlan = () => {
-    if (window.confirm("Are you sure you want to clear this study plan and reset progress?")) {
+    if (window.confirm("确定要清除当前学习计划并重置进度吗？")) {
       setStudyPlan(null);
       setCompletedTasks([]);
       localStorage.removeItem("active_study_plan");
@@ -141,7 +163,7 @@ export default function StudyPlanner() {
       {/* Introduction */}
       <div>
         <h1 className="text-xl font-bold text-text-primary">AI Study Planner Agent</h1>
-        <p className="text-xs text-text-secondary">Generate and track custom study timelines tailored specifically to your weak areas and exam date.</p>
+        <p className="text-xs text-text-secondary">根据你的薄弱环节和考试日期，生成并跟踪专属学习时间表。</p>
       </div>
 
       {loading ? (
@@ -149,7 +171,7 @@ export default function StudyPlanner() {
         <div className="glass-card rounded-2xl border border-border-card bg-bg-card p-12 text-center flex flex-col items-center justify-center space-y-6 min-h-[300px]">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-text-primary">Agent is composing study calendar...</h3>
+            <h3 className="text-sm font-semibold text-text-primary">智能代理正在生成学习日历...</h3>
             <p className="text-xs text-text-muted">{loadingMessages[loadingStep]}</p>
           </div>
         </div>
@@ -196,7 +218,7 @@ export default function StudyPlanner() {
                   Weekly Target Goal
                 </h4>
                 <p className="text-xs text-text-secondary">
-                  {studyPlan.weekly_schedule.find(w => w.week_number === activeWeek)?.weekly_goal}
+                  {translateGeneratedText(studyPlan.weekly_schedule.find(w => w.week_number === activeWeek)?.weekly_goal)}
                 </p>
               </div>
 
@@ -226,7 +248,7 @@ export default function StudyPlanner() {
                             }`}>
                               {day.priority}
                             </span>
-                            <span className="text-[10px] text-text-muted">{day.duration_hours}h</span>
+                            <span className="text-[10px] text-text-muted">{day.duration_hours} 小时</span>
                           </div>
                         </div>
 
@@ -244,7 +266,7 @@ export default function StudyPlanner() {
                           {day.activities.map((act, aIdx) => (
                             <div key={aIdx} className="flex items-center gap-2 text-xs text-text-secondary">
                               <span className="h-1 w-1 rounded-full bg-primary" />
-                              <span>{act}</span>
+                              <span>{translateGeneratedText(act)}</span>
                             </div>
                           ))}
                         </div>
@@ -259,7 +281,7 @@ export default function StudyPlanner() {
                           }`}
                         >
                           <CheckCircle2 className="h-4 w-4" />
-                          {isCompleted ? "Completed!" : "Mark Day as Complete"}
+                          {isCompleted ? "已完成！" : "将当天任务标记为完成"}
                         </button>
                       </div>
                     );
@@ -283,7 +305,7 @@ export default function StudyPlanner() {
                     <div>
                       <span className="text-[9px] text-primary font-bold">{ms.target_date}</span>
                       <h4 className="text-xs font-bold text-text-primary">{ms.title}</h4>
-                      <p className="text-[10px] text-text-secondary leading-normal">{ms.description}</p>
+                      <p className="text-[10px] text-text-secondary leading-normal">{translateGeneratedText(ms.description)}</p>
                     </div>
                   </div>
                 ))}
@@ -300,7 +322,7 @@ export default function StudyPlanner() {
                 {studyPlan.exam_readiness_checklist.map((item, idx) => (
                   <li key={idx} className="flex gap-2 items-start text-xs text-text-secondary">
                     <CheckCircle2 className="h-4 w-4 text-text-muted shrink-0 mt-0.5" />
-                    <span>{item}</span>
+                    <span>{translateGeneratedText(item)}</span>
                   </li>
                 ))}
               </ul>
@@ -318,13 +340,13 @@ export default function StudyPlanner() {
 
             {/* Subject name */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Subject Name</label>
+              <label className="text-xs font-semibold text-text-secondary">科目名称</label>
               <input
                 type="text"
                 required
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="e.g. Data Structures, Applied Physics, Software Engineering"
+                placeholder="例如：Data Structures、Applied Physics、Software Engineering"
                 className="input-field"
               />
             </div>
@@ -332,7 +354,7 @@ export default function StudyPlanner() {
             <div className="grid gap-4 sm:grid-cols-2">
               {/* Exam Date */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-text-secondary">Exam Date</label>
+                <label className="text-xs font-semibold text-text-secondary">考试日期</label>
                 <input
                   type="date"
                   required
@@ -344,7 +366,7 @@ export default function StudyPlanner() {
 
               {/* Study Hours */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-text-secondary">Daily Study Limit (Hours)</label>
+                <label className="text-xs font-semibold text-text-secondary">每日学习时长（小时）</label>
                 <input
                   type="number"
                   min="1"
@@ -358,27 +380,27 @@ export default function StudyPlanner() {
 
             {/* Current Proficiency level */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Your Current Proficiency</label>
+              <label className="text-xs font-semibold text-text-secondary">当前学习水平</label>
               <select
                 value={level}
                 onChange={(e) => setLevel(e.target.value)}
                 className="input-field bg-bg-dark"
               >
-                <option value="Beginner">Beginner (Struggling with fundamentals)</option>
-                <option value="Intermediate">Intermediate (Understand concepts, need problem practice)</option>
-                <option value="Advanced">Advanced (Deep knowledge, revising for high grades)</option>
+                <option value="Beginner">初级（基础薄弱）</option>
+                <option value="Intermediate">中级（理解概念，需要加强练习）</option>
+                <option value="Advanced">高级（知识扎实，正在冲刺高分）</option>
               </select>
             </div>
 
             {/* Weak Topics */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Weak Topics (Target Areas)</label>
+              <label className="text-xs font-semibold text-text-secondary">薄弱主题（重点攻克）</label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={topicInput}
                   onChange={(e) => setTopicInput(e.target.value)}
-                  placeholder="e.g. Tree Traversal, Normalization, Git Merge"
+                  placeholder="例如：Tree Traversal、Normalization、Git Merge"
                   className="input-field flex-1"
                 />
                 <button
@@ -415,14 +437,14 @@ export default function StudyPlanner() {
             {/* Info warning */}
             <div className="flex gap-2 items-start bg-blue-500/10 border border-blue-500/25 p-3 rounded-xl text-[10px] text-blue-300">
               <AlertCircle className="h-4.5 w-4.5 shrink-0 mt-0.5" />
-              <p>The planner uses Gemini AI to balance your weeks. It focuses the first half on identifying definitions and practice problems for weak spots, before shifting towards timed mock tests.</p>
+              <p>学习计划工具会使用 Gemini AI 合理安排每周任务。前期重点梳理薄弱环节中的定义与练习题，后期逐步转向限时模拟测试。</p>
             </div>
 
             <button
               type="submit"
               className="w-full bg-primary hover:bg-primary-hover font-semibold text-sm text-white py-3 rounded-xl shadow-lg shadow-primary/20 transition cursor-pointer"
             >
-              Compose Study Schedule
+              生成学习计划
             </button>
           </form>
         </div>

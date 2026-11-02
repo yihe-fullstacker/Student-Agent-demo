@@ -72,26 +72,26 @@ export default function Header({ currentPage, toggleSidebar }) {
           {hasApiKey ? (
             <>
               <Sparkles className="h-3.5 w-3.5 text-success animate-pulse" />
-              <span className="text-success font-medium">Gemini Connected</span>
+              <span className="text-success font-medium">Gemini 已连接</span>
             </>
           ) : (
             <>
               <AlertTriangle className="h-3.5 w-3.5 text-warning" />
-              <span className="text-warning font-medium">Demo Mode (Mock API)</span>
+              <span className="text-warning font-medium">演示模式（模拟 API）</span>
             </>
           )}
         </div>
 
         {/* Date indicator */}
         <div className="hidden text-xs text-text-secondary xl:block">
-          {new Date().toLocaleDateString("en-US", { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
+          {new Date().toLocaleDateString("zh-CN", { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
         </div>
 
         {/* Profile indicator */}
         <div className="flex items-center gap-2 border-l border-border-card pl-4">
           <div className="text-right hidden sm:block">
             <p className="text-xs font-semibold text-text-primary">{studentName}</p>
-            <p className="text-[10px] text-text-muted">Student Profile</p>
+            <p className="text-[10px] text-text-muted">学生资料</p>
           </div>
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs">
             {studentName.charAt(0).toUpperCase()}

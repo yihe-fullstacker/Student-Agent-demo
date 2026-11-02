@@ -13,13 +13,13 @@ import {
 
 export default function Sidebar({ currentPage, setCurrentPage, isOpen, toggleSidebar }) {
   const menuItems = [
-    { id: "home", label: "Overview", icon: BookOpen },
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "planner", label: "Study Planner", icon: Calendar },
-    { id: "examprep", label: "Exam Prep", icon: GraduationCap },
-    { id: "career", label: "Career Guidance", icon: Briefcase },
-    { id: "projects", label: "Project Recommendations", icon: FolderGit2 },
-    { id: "settings", label: "Settings", icon: SettingsIcon },
+    { id: "home", label: "概览", icon: BookOpen },
+    { id: "dashboard", label: "仪表盘", icon: LayoutDashboard },
+    { id: "planner", label: "学习计划", icon: Calendar },
+    { id: "examprep", label: "考试备考", icon: GraduationCap },
+    { id: "career", label: "职业指导", icon: Briefcase },
+    { id: "projects", label: "项目推荐", icon: FolderGit2 },
+    { id: "settings", label: "设置", icon: SettingsIcon },
   ];
 
   return (
@@ -90,7 +90,7 @@ export default function Sidebar({ currentPage, setCurrentPage, isOpen, toggleSid
             </div>
             <div className="min-w-0">
               <p className="truncate text-xs font-semibold text-text-primary">Success Explorer</p>
-              <p className="truncate text-[10px] text-text-muted">Active Learner</p>
+              <p className="truncate text-[10px] text-text-muted">活跃学习者</p>
             </div>
           </div>
         </div>

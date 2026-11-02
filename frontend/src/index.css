@@ -136,11 +136,56 @@ body {
   animation-play-state: paused;
 }
 
+/* Keep the page behind the auth modal static while it is open. */
+body.auth-modal-open .marquee-track {
+  animation-play-state: paused;
+}
+
 @keyframes marquee {
   from {
     transform: translateX(0);
   }
   to {
     transform: translateX(-50%);
+  }
+}
+
+/* Auth stage pulse: run on the compositor instead of through JavaScript. */
+@keyframes authNodePulse {
+  0%, 100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes authNodeRing {
+  0% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+
+.auth-node-core {
+  animation: authNodePulse 2.4s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.auth-node-ring {
+  animation: authNodeRing 2.4s ease-out infinite;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-node-core,
+  .auth-node-ring {
+    animation: none;
   }
 }

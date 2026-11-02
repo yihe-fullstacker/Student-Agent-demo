@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { Eye, EyeOff, X, Sparkles } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import { PATHS } from "../routes/paths";
 
-function AgentStage() {
+const AgentStage = memo(function AgentStage() {
   const nodes = [
     { x: 28, y: 32, delay: 0 },
     { x: 72, y: 24, delay: 0.35 },
@@ -81,15 +81,13 @@ function AgentStage() {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: n.delay, type: "spring", stiffness: 220, damping: 16 }}
         >
-          <motion.div
-            className="h-3.5 w-3.5 rounded-full bg-sky-300 shadow-[0_0_18px_rgba(125,211,252,0.9)]"
-            animate={{ scale: [1, 1.35, 1], opacity: [0.85, 1, 0.85] }}
-            transition={{ duration: 2.4, repeat: Infinity, delay: n.delay }}
+          <div
+            className="auth-node-core h-3.5 w-3.5 rounded-full bg-sky-300 shadow-[0_0_18px_rgba(125,211,252,0.9)]"
+            style={{ animationDelay: `${n.delay}s` }}
           />
-          <motion.div
-            className="absolute inset-0 -m-2 rounded-full border border-sky-200/40"
-            animate={{ scale: [1, 2.2], opacity: [0.5, 0] }}
-            transition={{ duration: 2.4, repeat: Infinity, delay: n.delay }}
+          <div
+            className="auth-node-ring absolute inset-0 -m-2 rounded-full border border-sky-200/40"
+            style={{ animationDelay: `${n.delay}s` }}
           />
         </motion.div>
       ))}
@@ -106,7 +104,7 @@ function AgentStage() {
       </div>
     </div>
   );
-}
+});
 
 export default function AuthModal({ open, onClose, initialMode = "login", redirectTo = PATHS.APP }) {
   const navigate = useNavigate();
@@ -138,10 +136,18 @@ export default function AuthModal({ open, onClose, initialMode = "login", redire
     };
     window.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
+    const videos = Array.from(document.querySelectorAll("video"));
+    const playingVideos = videos.filter((video) => !video.paused);
     document.body.style.overflow = "hidden";
+    document.body.classList.add("auth-modal-open");
+    videos.forEach((video) => video.pause());
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
+      document.body.classList.remove("auth-modal-open");
+      playingVideos.forEach((video) => {
+        if (video.isConnected) video.play().catch(() => undefined);
+      });
     };
   }, [open, onClose]);
 
@@ -197,7 +203,7 @@ export default function AuthModal({ open, onClose, initialMode = "login", redire
             role="dialog"
             aria-modal="true"
             aria-labelledby="auth-modal-title"
-            className="relative z-10 grid w-full max-w-[880px] overflow-hidden rounded-[32px] border border-slate-200/70 bg-[#f9fafb] shadow-[0_40px_100px_-20px_rgba(10,21,45,0.35)] md:grid-cols-2"
+            className="relative z-10 grid w-full max-w-[880px] overflow-hidden rounded-[32px] border border-slate-200/70 bg-[#f9fafb] shadow-[0_40px_100px_-20px_rgba(10,21,45,0.35)] md:h-[min(680px,calc(100vh-4rem))] md:grid-cols-2"
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.98 }}
@@ -207,7 +213,7 @@ export default function AuthModal({ open, onClose, initialMode = "login", redire
               <AgentStage />
             </div>
 
-            <div className="relative flex flex-col p-6 md:p-8">
+            <div className="relative flex min-h-0 flex-col overflow-y-auto p-6 md:p-8">
               <button
                 type="button"
                 onClick={onClose}

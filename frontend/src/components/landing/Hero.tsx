@@ -34,9 +34,8 @@ export function Hero() {
           </h1>
 
           <p className="mt-5 font-sans text-[14px] md:text-[15px] text-[#64748b] max-w-md leading-relaxed">
-            Tailored study roadmaps, mock exams, skill-gap analyses and
-            portfolio-ready projects — built for students, builders and
-            lifelong learners alike.
+            量身定制的学习路线图、模拟考试、技能差距分析，以及可直接用于作品集的项目——
+            专为学生、实践者和终身学习者打造。
           </p>
 
           <div className="mt-8">

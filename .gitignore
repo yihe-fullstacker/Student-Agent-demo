@@ -7,6 +7,15 @@ backend/__pycache__
 backend/.venv
 backend/venv
 backend/.pytest_cache
+**/__pycache__/
+*.py[cod]
+**/.pip-cache/
+
+# Package manager caches
+**/.npm-cache/
+
+# Runtime logs
+**/*.log
 
 # Environment
 .env

@@ -14,28 +14,28 @@ export default function Home({ setCurrentPage }) {
     {
       id: "planner",
       title: "AI Study Planner",
-      desc: "Generate optimized daily study schedules leading up to your exam dates, targeting weak topics first.",
+      desc: "围绕考试日期生成优化的每日学习安排，并优先处理薄弱主题。",
       icon: Calendar,
       color: "from-blue-600/20 to-indigo-600/20 border-indigo-500/20 text-indigo-400"
     },
     {
       id: "examprep",
       title: "Exam Prep Agent",
-      desc: "Produce structured topic summaries, multiple-choice practice tests (MCQs), and important questions with answers.",
+      desc: "生成结构化的主题总结、选择题练习和带参考答案的重点问题。",
       icon: GraduationCap,
       color: "from-purple-600/20 to-pink-600/20 border-pink-500/20 text-pink-400"
     },
     {
       id: "career",
       title: "Career Guidance Agent",
-      desc: "Identify skills gaps for roles in AI, ML, and software engineering. View timeline roadmaps and resource recommendations.",
+      desc: "分析 AI、机器学习和软件工程岗位所需的能力差距，查看成长路线和资源建议。",
       icon: Briefcase,
       color: "from-emerald-600/20 to-teal-600/20 border-emerald-500/20 text-emerald-400"
     },
     {
       id: "projects",
       title: "Project Advisor",
-      desc: "Discover tailored portfolio projects. Generate code files, technology recommendations, and clean GitHub README templates.",
+      desc: "发现适合你的作品集项目，并生成技术选型建议和规范的 GitHub README 模板。",
       icon: FolderGit2,
       color: "from-amber-600/20 to-orange-600/20 border-amber-500/20 text-amber-400"
     }
@@ -58,21 +58,21 @@ export default function Home({ setCurrentPage }) {
             <span className="gradient-text font-black">Career Success Journey</span>
           </h1>
           <p className="text-sm text-text-secondary md:text-base leading-relaxed">
-            Welcome to the Smart Student Success Agent. Our production-grade AI agents utilize advanced reasoning and structured prompts to build tailored study roadmaps, host mock exams, map out skills, and suggest code portfolios.
+            欢迎使用 Smart Student Success Agent。我们的 AI 智能代理会通过结构化推理，为你制定专属学习路线、组织模拟考试、分析能力差距并推荐编程作品集项目。
           </p>
           <div className="pt-4 flex flex-wrap gap-3">
             <button 
               onClick={() => setCurrentPage("planner")}
               className="flex items-center gap-2 rounded-xl bg-primary hover:bg-primary-hover transition text-white font-semibold text-sm px-5 py-3 shadow-lg shadow-primary/20 cursor-pointer"
             >
-              Start Study Planner
+              开始制定学习计划
               <ArrowRight className="h-4 w-4" />
             </button>
             <button 
               onClick={() => setCurrentPage("dashboard")}
               className="flex items-center gap-2 rounded-xl bg-white border border-border-card text-text-primary font-semibold text-sm px-5 py-3 hover:bg-slate-100 transition cursor-pointer"
             >
-              View Analytics
+              查看学习分析
             </button>
           </div>
         </div>
@@ -82,7 +82,7 @@ export default function Home({ setCurrentPage }) {
       <section className="space-y-4">
         <div>
           <h2 className="text-xl font-bold text-text-primary">Meet Your AI Success Agents</h2>
-          <p className="text-xs text-text-muted">Four specialized agents working together to support your progress.</p>
+          <p className="text-xs text-text-muted">四个专业智能代理协同工作，帮助你持续进步。</p>
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2">
@@ -104,7 +104,7 @@ export default function Home({ setCurrentPage }) {
                   </div>
                 </div>
                 <div className="pt-4 flex items-center text-xs font-semibold text-text-primary gap-1 group">
-                  Deploy Agent 
+                  使用该智能代理
                   <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
@@ -122,17 +122,17 @@ export default function Home({ setCurrentPage }) {
               Impact Statement
             </h3>
             <p className="text-xs text-text-secondary max-w-xl">
-              By combining scheduling optimizations with active recall quiz loops and personalized skill gap analyses, this workspace targets the core academic bottlenecks students face: poor time management, passive learning habits, and post-graduation skill mismatches.
+              通过优化学习安排、主动回忆测验和个性化能力差距分析，本平台重点解决学生常见的核心问题：时间管理不足、被动学习习惯，以及毕业后的技能错配。
             </p>
           </div>
           <div className="grid grid-cols-2 gap-4 text-center sm:text-left shrink-0">
             <div className="bg-bg-dark p-3.5 rounded-xl border border-border-card">
               <div className="text-lg font-bold text-primary">85%+</div>
-              <div className="text-[10px] text-text-muted">Retention Improvement</div>
+              <div className="text-[10px] text-text-muted">知识留存提升</div>
             </div>
             <div className="bg-bg-dark p-3.5 rounded-xl border border-border-card">
               <div className="text-lg font-bold text-secondary">3x</div>
-              <div className="text-[10px] text-text-muted">Faster Job Readiness</div>
+              <div className="text-[10px] text-text-muted">更快达到岗位要求</div>
             </div>
           </div>
         </div>

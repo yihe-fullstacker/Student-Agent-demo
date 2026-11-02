@@ -69,7 +69,7 @@ export default function ProjectRecommend() {
 
     } catch (err) {
       console.error(err);
-      alert("Error generating recommendations. Please check settings.");
+      alert("生成项目推荐失败，请检查设置。");
     } finally {
       setLoading(false);
     }
@@ -88,7 +88,7 @@ export default function ProjectRecommend() {
       {/* Intro */}
       <div>
         <h1 className="text-xl font-bold text-text-primary">Project Recommendation Agent</h1>
-        <p className="text-xs text-text-secondary">Generate complete portfolio project briefs tailored to your tech stack, including features, milestones, and ready-to-use GitHub README templates.</p>
+        <p className="text-xs text-text-secondary">根据你的技术栈生成完整作品集项目方案，包括功能规划、实施里程碑和可直接使用的 GitHub README 模板。</p>
       </div>
 
       {loading ? (
@@ -96,8 +96,8 @@ export default function ProjectRecommend() {
         <div className="glass-card rounded-2xl border border-border-card bg-bg-card p-12 text-center flex flex-col items-center justify-center space-y-4 min-h-[300px]">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
           <div>
-            <h3 className="text-sm font-semibold text-text-primary font-bold">Agent is formulating project plans...</h3>
-            <p className="text-xs text-text-muted mt-1">Assembling milestone scopes, feature specs, and formatting markdown READMEs.</p>
+            <h3 className="text-sm font-semibold text-text-primary font-bold">智能代理正在规划项目...</h3>
+            <p className="text-xs text-text-muted mt-1">正在整理阶段目标、功能规格和 Markdown README。</p>
           </div>
         </div>
       ) : projectData ? (
@@ -127,7 +127,7 @@ export default function ProjectRecommend() {
                     }`}>
                       {proj.difficulty}
                     </span>
-                    <span className="text-[9px] text-text-muted">{scope} Project</span>
+                    <span className="text-[9px] text-text-muted">{scope === "Individual" ? "个人项目" : "团队项目"}</span>
                   </div>
                   <h4 className="text-xs font-bold text-text-primary line-clamp-1">{proj.title}</h4>
                   <p className="text-[10px] text-text-secondary line-clamp-2 leading-relaxed">{proj.description}</p>
@@ -139,7 +139,7 @@ export default function ProjectRecommend() {
               onClick={() => setProjectData(null)}
               className="w-full text-center text-xs font-bold border border-border-card bg-bg-card-hover text-text-secondary hover:text-text-primary py-3 rounded-xl transition cursor-pointer"
             >
-              Adjust Parameters
+              调整生成条件
             </button>
           </div>
 
@@ -215,12 +215,12 @@ export default function ProjectRecommend() {
                       {copiedIndex === activeProjectIdx ? (
                         <>
                           <Check className="h-3.5 w-3.5 text-success" />
-                          Copied!
+                          已复制！
                         </>
                       ) : (
                         <>
                           <Copy className="h-3.5 w-3.5" />
-                          Copy Template
+                          复制模板
                         </>
                       )}
                     </button>
@@ -247,56 +247,56 @@ export default function ProjectRecommend() {
             <div className="grid gap-4 sm:grid-cols-2">
               {/* Domain select */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-text-secondary">Project Domain</label>
+                <label className="text-xs font-semibold text-text-secondary">项目领域</label>
                 <select
                   value={domain}
                   onChange={(e) => setDomain(e.target.value)}
                   className="input-field bg-bg-dark"
                 >
-                  <option value="Web Development">Web Development</option>
-                  <option value="AI & Machine Learning">AI & Machine Learning</option>
-                  <option value="Software Engineering">Software Engineering</option>
-                  <option value="Mobile Applications">Mobile Applications</option>
+                  <option value="Web Development">Web 开发</option>
+                  <option value="AI & Machine Learning">AI 与机器学习</option>
+                  <option value="Software Engineering">软件工程</option>
+                  <option value="Mobile Applications">移动应用</option>
                 </select>
               </div>
 
               {/* Scope select */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-text-secondary">Working Scope</label>
+                <label className="text-xs font-semibold text-text-secondary">协作方式</label>
                 <select
                   value={scope}
                   onChange={(e) => setScope(e.target.value)}
                   className="input-field bg-bg-dark"
                 >
-                  <option value="Individual">Individual Capstone</option>
-                  <option value="Team">Team Hackathon</option>
+                  <option value="Individual">个人毕业项目</option>
+                  <option value="Team">团队黑客松</option>
                 </select>
               </div>
             </div>
 
             {/* Difficulty select */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Target Difficulty</label>
+              <label className="text-xs font-semibold text-text-secondary">目标难度</label>
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value)}
                 className="input-field bg-bg-dark"
               >
-                <option value="Beginner">Beginner (Boilerplate scaffolding & storage)</option>
-                <option value="Intermediate">Intermediate (APIs, charts & validation)</option>
-                <option value="Advanced">Advanced (Agentic orchestration, Docker, full security)</option>
+                <option value="Beginner">初级（基础脚手架与数据存储）</option>
+                <option value="Intermediate">中级（API、图表与表单验证）</option>
+                <option value="Advanced">高级（智能代理编排、Docker 与完整安全机制）</option>
               </select>
             </div>
 
             {/* Tech Stack tags */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Tech Stack Preferences</label>
+              <label className="text-xs font-semibold text-text-secondary">偏好的技术栈</label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={techInput}
                   onChange={(e) => setTechInput(e.target.value)}
-                  placeholder="e.g. React, Python, FastAPI, Tailwind"
+                  placeholder="例如：React、Python、FastAPI、Tailwind"
                   className="input-field flex-1"
                 />
                 <button
@@ -333,7 +333,7 @@ export default function ProjectRecommend() {
               type="submit"
               className="w-full bg-primary hover:bg-primary-hover font-semibold text-sm text-white py-3 rounded-xl shadow-lg shadow-primary/20 transition cursor-pointer"
             >
-              Generate Portfolio Ideas
+              生成作品集项目
             </button>
           </form>
         </div>

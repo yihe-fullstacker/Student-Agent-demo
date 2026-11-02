@@ -43,7 +43,7 @@ export default function Settings() {
   const handleClearKey = () => {
     localStorage.removeItem("student_gemini_api_key");
     setApiKey("");
-    alert("Gemini API Key removed. The app will return to Offline Demo Mode.");
+    alert("Gemini API 密钥已移除，应用将恢复为离线演示模式。");
   };
 
   return (
@@ -51,7 +51,7 @@ export default function Settings() {
       {/* Intro */}
       <div>
         <h1 className="text-xl font-bold text-text-primary">Agent Settings</h1>
-        <p className="text-xs text-text-secondary">Configure your user profile and link your Gemini API key to activate live agent reasoning.</p>
+        <p className="text-xs text-text-secondary">配置个人资料并关联 Gemini API 密钥，以启用实时智能代理推理。</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 max-w-4xl">
@@ -65,34 +65,34 @@ export default function Settings() {
 
           <form onSubmit={handleSave} className="space-y-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Full Name</label>
+              <label className="text-xs font-semibold text-text-secondary">姓名</label>
               <input
                 type="text"
                 value={profileName}
                 onChange={(e) => setProfileName(e.target.value)}
-                placeholder="e.g. Jane Doe"
+                placeholder="例如：Jane Doe"
                 className="input-field"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Institution / College</label>
+              <label className="text-xs font-semibold text-text-secondary">学校 / 学院</label>
               <input
                 type="text"
                 value={institution}
                 onChange={(e) => setInstitution(e.target.value)}
-                placeholder="e.g. Polytechnic of Technology"
+                placeholder="例如：Polytechnic of Technology"
                 className="input-field"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Academic Major</label>
+              <label className="text-xs font-semibold text-text-secondary">专业</label>
               <input
                 type="text"
                 value={major}
                 onChange={(e) => setMajor(e.target.value)}
-                placeholder="e.g. Software Engineering"
+                placeholder="例如：Software Engineering"
                 className="input-field"
               />
             </div>
@@ -104,10 +104,10 @@ export default function Settings() {
               {saved ? (
                 <>
                   <Check className="h-4 w-4 text-success" />
-                  Profile Saved Successfully!
+                  个人资料保存成功！
                 </>
               ) : (
-                "Save Credentials"
+                "保存个人资料"
               )}
             </button>
           </form>
@@ -122,7 +122,7 @@ export default function Settings() {
             </h3>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Gemini API Key</label>
+              <label className="text-xs font-semibold text-text-secondary">Gemini API 密钥</label>
               <input
                 type="password"
                 value={apiKey}
@@ -130,14 +130,14 @@ export default function Settings() {
                 placeholder="AIzaSy..."
                 className="input-field w-full"
               />
-              <p className="text-[10px] text-text-muted">Your API key is cached locally in your secure browser storage. It is never stored on external databases.</p>
+              <p className="text-[10px] text-text-muted">API 密钥仅缓存在浏览器本地存储中，不会保存到外部数据库。</p>
             </div>
 
             <div className="flex gap-2 items-start bg-yellow-500/10 border border-yellow-500/25 p-3.5 rounded-xl text-[10px] text-yellow-300">
               <ShieldAlert className="h-5 w-5 shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold">Offline Demo Mode Notice:</span>
-                <p className="mt-1">If no API key is specified (or if the backend server lacks a key), the application operates in demo mode using highly structured mock content tailored to your inputs. To experience active LLM reasoning, paste a Gemini key above.</p>
+                <p className="mt-1">如果未提供 API 密钥，或后端服务器没有配置密钥，应用将使用根据输入生成的结构化模拟内容运行。如需体验实时大模型推理，请在上方填写 Gemini 密钥。</p>
               </div>
             </div>
           </div>
@@ -147,14 +147,14 @@ export default function Settings() {
               onClick={handleSave}
               className="flex-1 bg-primary hover:bg-primary-hover font-semibold text-xs text-white py-2.5 rounded-xl transition cursor-pointer"
             >
-              {saved ? "Updated!" : "Update API Key"}
+              {saved ? "已更新！" : "更新 API 密钥"}
             </button>
             {apiKey && (
               <button
                 onClick={handleClearKey}
                 className="bg-accent/15 border border-accent/20 hover:bg-accent/25 text-accent font-semibold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer"
               >
-                Clear Key
+                清除密钥
               </button>
             )}
           </div>

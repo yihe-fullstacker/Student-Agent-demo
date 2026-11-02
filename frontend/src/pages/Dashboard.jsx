@@ -92,7 +92,7 @@ export default function Dashboard({ setCurrentPage }) {
             weekNum: week.week_number,
             dayName: day.day_name,
             topic: day.topic,
-            activity: day.activities[0] || "Study core concepts",
+            activity: day.activities[0] || "学习核心概念",
             priority: day.priority
           });
         }
@@ -145,11 +145,11 @@ export default function Dashboard({ setCurrentPage }) {
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Learning analytics</p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-text-primary">Your progress, in focus.</h1>
-          <p className="mt-1 text-xs text-text-secondary">A clear read on your study rhythm, follow-through, and next best move.</p>
+          <p className="mt-1 text-xs text-text-secondary">清晰了解你的学习节奏、任务完成情况，以及下一步最佳行动。</p>
         </div>
         <div className="flex items-center gap-2 rounded-xl border border-success/20 bg-success/5 px-3 py-2 text-[10px] font-bold text-success">
           <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-          {stats.completedTasksCount > 0 ? "Momentum is building" : "Ready to begin"}
+          {stats.completedTasksCount > 0 ? "学习势头正在提升" : "准备开始"}
         </div>
       </div>
 
@@ -162,8 +162,8 @@ export default function Dashboard({ setCurrentPage }) {
           </div>
           <div>
             <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Hours Studied</p>
-            <h3 className="text-xl font-bold text-text-primary">{stats.studyHours}h</h3>
-            <p className="text-[10px] text-text-secondary">Logged from planner</p>
+            <h3 className="text-xl font-bold text-text-primary">{stats.studyHours} 小时</h3>
+            <p className="text-[10px] text-text-secondary">来自学习计划</p>
           </div>
         </div>
 
@@ -175,7 +175,7 @@ export default function Dashboard({ setCurrentPage }) {
           <div>
             <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Tasks Complete</p>
             <h3 className="text-xl font-bold text-text-primary">{stats.completedTasksCount}/{stats.totalTasksCount}</h3>
-            <p className="text-[10px] text-text-secondary">{completionPercentage}% progress rate</p>
+            <p className="text-[10px] text-text-secondary">进度完成率 {completionPercentage}%</p>
           </div>
         </div>
 
@@ -187,7 +187,7 @@ export default function Dashboard({ setCurrentPage }) {
           <div>
             <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Quiz Score Avg</p>
             <h3 className="text-xl font-bold text-text-primary">{stats.quizScoreAverage}%</h3>
-            <p className="text-[10px] text-text-secondary">Based on mock tests</p>
+            <p className="text-[10px] text-text-secondary">基于模拟测验</p>
           </div>
         </div>
 
@@ -199,7 +199,7 @@ export default function Dashboard({ setCurrentPage }) {
           <div>
             <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Suggested Projects</p>
             <h3 className="text-xl font-bold text-text-primary">{stats.recommendedProjects}</h3>
-            <p className="text-[10px] text-text-secondary">Active in portfolio</p>
+            <p className="text-[10px] text-text-secondary">正在用于作品集</p>
           </div>
         </div>
       </section>
@@ -214,9 +214,9 @@ export default function Dashboard({ setCurrentPage }) {
                 <TrendingUp className="h-4.5 w-4.5 text-primary" />
                 Weekly Performance Activity
               </h3>
-              <p className="text-[10px] text-text-muted">Visualizing learning intensity (target hours vs completed)</p>
+              <p className="text-[10px] text-text-muted">直观展示学习强度（目标时长与实际完成时长）</p>
             </div>
-            <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-1 rounded">{weeklyAnalytics.length} week view</span>
+            <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-1 rounded">{weeklyAnalytics.length} 周视图</span>
           </div>
 
           <div className="flex h-48 items-end gap-3 border-b border-border-card/30 px-2 py-3 sm:gap-6">
@@ -236,11 +236,11 @@ export default function Dashboard({ setCurrentPage }) {
           <div className="flex gap-4 justify-center text-[10px] text-text-secondary pt-3 border-t border-border-card/20">
             <span className="flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-primary"></span>
-              Assigned Tasks Target
+              计划任务目标
             </span>
             <span className="flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-success"></span>
-              Completed Tasks
+              已完成任务
             </span>
           </div>
         </div>
@@ -251,9 +251,9 @@ export default function Dashboard({ setCurrentPage }) {
             <div className="flex items-center justify-between pb-2 border-b border-border-card/30">
               <h3 className="text-sm font-bold text-text-primary flex items-center gap-1.5">
                 <Calendar className="h-4.5 w-4.5 text-secondary" />
-                Next Up Agenda
+                下一步日程
               </h3>
-              <span className="text-[10px] text-text-muted">{pendingAgenda.length} tasks pending</span>
+              <span className="text-[10px] text-text-muted">待完成 {pendingAgenda.length} 项</span>
             </div>
 
             {pendingAgenda.length > 0 ? (
@@ -277,14 +277,14 @@ export default function Dashboard({ setCurrentPage }) {
               <div className="flex flex-col items-center justify-center py-8 text-center space-y-3">
                 <AlertCircle className="h-8 w-8 text-text-muted" />
                 <div>
-                  <p className="text-xs font-bold text-text-secondary">No active study plan loaded</p>
-                  <p className="text-[10px] text-text-muted max-w-[200px]">Use the study planner agent to map out schedules.</p>
+                  <p className="text-xs font-bold text-text-secondary">尚未加载学习计划</p>
+                  <p className="text-[10px] text-text-muted max-w-[200px]">使用学习计划智能代理来安排你的学习日程。</p>
                 </div>
                 <button
                   onClick={() => setCurrentPage("planner")}
                   className="flex items-center gap-1 text-[10px] font-bold text-primary hover:text-primary-hover border border-primary/20 px-3 py-1.5 rounded-lg bg-primary/5 transition cursor-pointer"
                 >
-                  Create Plan Now
+                  立即创建计划
                   <ArrowRight className="h-3 w-3" />
                 </button>
               </div>
@@ -296,7 +296,7 @@ export default function Dashboard({ setCurrentPage }) {
               onClick={() => setCurrentPage("planner")}
               className="w-full text-center text-xs font-bold text-text-secondary hover:text-text-primary py-2.5 mt-4 border-t border-border-card/30"
             >
-              Open Study Planner checklist
+              打开学习计划清单
             </button>
           )}
         </div>
@@ -307,25 +307,25 @@ export default function Dashboard({ setCurrentPage }) {
           <div className="flex items-center justify-between border-b border-border-card/30 pb-4">
             <div>
               <h3 className="flex items-center gap-1.5 text-sm font-bold text-text-primary"><Target className="h-4 w-4 text-primary" /> Skill-building signals</h3>
-              <p className="mt-1 text-[10px] text-text-muted">Small indicators that show whether your routine is working.</p>
+              <p className="mt-1 text-[10px] text-text-muted">通过这些指标判断当前学习安排是否有效。</p>
             </div>
             <TrendingUp className="h-5 w-5 text-success" />
           </div>
           <div className="grid gap-4 pt-5 sm:grid-cols-3">
             <div className="rounded-xl border border-border-card bg-bg-dark/30 p-4">
-              <div className="mb-3 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Consistency</span><span className="text-xs font-bold text-success">{consistencyScore}%</span></div>
+              <div className="mb-3 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">执行稳定性</span><span className="text-xs font-bold text-success">{consistencyScore}%</span></div>
               <div className="h-1.5 overflow-hidden rounded-full bg-bg-card-hover"><div className="h-full rounded-full bg-success" style={{ width: `${consistencyScore}%` }} /></div>
-              <p className="mt-2 text-[10px] text-text-secondary">Plan completion across all weeks</p>
+              <p className="mt-2 text-[10px] text-text-secondary">所有周计划的完成情况</p>
             </div>
             <div className="rounded-xl border border-border-card bg-bg-dark/30 p-4">
-              <div className="mb-3 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Focus score</span><span className="text-xs font-bold text-secondary">{focusScore}%</span></div>
+              <div className="mb-3 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">专注评分</span><span className="text-xs font-bold text-secondary">{focusScore}%</span></div>
               <div className="h-1.5 overflow-hidden rounded-full bg-bg-card-hover"><div className="h-full rounded-full bg-secondary" style={{ width: `${focusScore}%` }} /></div>
-              <p className="mt-2 text-[10px] text-text-secondary">Quiz results plus task follow-through</p>
+              <p className="mt-2 text-[10px] text-text-secondary">综合测验成绩与任务执行情况</p>
             </div>
             <div className="rounded-xl border border-border-card bg-bg-dark/30 p-4">
-              <div className="mb-3 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Best week</span><Flame className="h-4 w-4 text-warning" /></div>
-              <p className="text-lg font-bold text-text-primary">{strongestWeek?.label || "No data"}</p>
-              <p className="mt-1 text-[10px] text-text-secondary">{strongestWeek?.completion || 0}% of planned hours completed</p>
+              <div className="mb-3 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">最佳周次</span><Flame className="h-4 w-4 text-warning" /></div>
+              <p className="text-lg font-bold text-text-primary">{strongestWeek?.label || "暂无数据"}</p>
+              <p className="mt-1 text-[10px] text-text-secondary">已完成计划时长的 {strongestWeek?.completion || 0}%</p>
             </div>
           </div>
         </div>
@@ -334,11 +334,11 @@ export default function Dashboard({ setCurrentPage }) {
           <h3 className="flex items-center gap-1.5 border-b border-border-card/30 pb-4 text-sm font-bold text-text-primary"><Brain className="h-4 w-4 text-secondary" /> Next best move</h3>
           <div className="space-y-4 pt-5">
             <p className="text-sm font-semibold leading-relaxed text-text-primary">
-              {completionPercentage >= 80 ? "Keep your rhythm and raise the challenge slightly." : "Complete one pending study block to lift your momentum."}
+              {completionPercentage >= 80 ? "保持当前节奏，并适当提高学习挑战。" : "完成一个待办学习任务，提升学习势头。"}
             </p>
-            <p className="text-xs leading-relaxed text-text-secondary">{pendingAgenda[0]?.activity || "Create a study plan to turn your goals into measurable progress."}</p>
+            <p className="text-xs leading-relaxed text-text-secondary">{pendingAgenda[0]?.activity || "创建学习计划，把目标转化为可衡量的进度。"}</p>
             <button onClick={() => setCurrentPage("planner")} className="flex w-full items-center justify-between rounded-xl border border-primary/25 bg-primary/10 px-3 py-2.5 text-xs font-bold text-primary transition hover:bg-primary/20">
-              {pendingAgenda.length ? "Continue study plan" : "Create your first plan"}<ChevronRight className="h-4 w-4" />
+              {pendingAgenda.length ? "继续学习计划" : "创建你的第一份计划"}<ChevronRight className="h-4 w-4" />
             </button>
           </div>
         </div>

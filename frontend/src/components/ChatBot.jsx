@@ -7,15 +7,15 @@ export default function ChatBot() {
   const [messages, setMessages] = useState([
     {
       role: "model",
-      content: "Hello! I'm your **Academic and Career Success Agent**. How can I help you excel in your studies or map out your career roadmap today?"
+      content: "你好！我是你的 **Academic and Career Success Agent**。今天我可以怎样帮助你提升学习，或规划职业发展路线？"
     }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState([
-    "How can I set up a study schedule?",
-    "Recommend software engineering projects",
-    "What is a skills gap analysis?"
+    "如何制定学习计划？",
+    "推荐一些软件工程项目",
+    "什么是能力差距分析？"
   ]);
 
   const messagesEndRef = useRef(null);
@@ -73,7 +73,7 @@ export default function ChatBot() {
         ...prev,
         { 
           role: "model", 
-          content: "Sorry, I encountered an issue connecting to the AI services. Please verify your internet connection or Gemini API key settings." 
+          content: "抱歉，连接 AI 服务失败。请检查网络连接或 Gemini API 密钥设置。"
         }
       ]);
     } finally {
@@ -114,7 +114,7 @@ export default function ChatBot() {
                 <h3 className="text-sm font-bold text-text-primary">Academic & Career AI</h3>
                 <span className="text-[10px] text-success flex items-center gap-1 font-medium">
                   <span className="h-1.5 w-1.5 rounded-full bg-success animate-ping"></span>
-                  Active Mentor
+                  在线学习导师
                 </span>
               </div>
             </div>
@@ -151,7 +151,7 @@ export default function ChatBot() {
               <div className="flex justify-start">
                 <div className="flex items-center gap-2 max-w-[85%] rounded-2xl bg-bg-card-hover/70 px-4 py-3 text-sm text-text-muted border border-border-card/30 rounded-bl-none">
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span>Agent is reasoning...</span>
+                  <span>智能代理正在思考...</span>
                 </div>
               </div>
             )}
@@ -180,7 +180,7 @@ export default function ChatBot() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder="Ask me about planning, roadmaps, exams..."
+                placeholder="咨询学习规划、职业路线或考试问题..."
                 className="w-full resize-none rounded-xl border border-border-card bg-bg-dark px-4 py-3 pr-12 text-sm text-text-primary placeholder-text-muted focus:border-primary focus:outline-none h-11 leading-tight"
                 rows={1}
               />

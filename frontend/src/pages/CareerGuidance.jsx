@@ -71,7 +71,7 @@ export default function CareerGuidance() {
       localStorage.setItem("career_target", career);
     } catch (err) {
       console.error(err);
-      alert("Error mapping career path. Please check settings.");
+      alert("生成职业路径失败，请检查设置。");
     } finally {
       setLoading(false);
     }
@@ -82,7 +82,7 @@ export default function CareerGuidance() {
       {/* Intro */}
       <div>
         <h1 className="text-xl font-bold text-text-primary">Career Guidance Agent</h1>
-        <p className="text-xs text-text-secondary">Analyze skill gaps, plan structured learning paths, and discover portfolio focus strategies matching your interests.</p>
+        <p className="text-xs text-text-secondary">分析能力差距，规划系统学习路径，并探索符合兴趣的作品集方向。</p>
       </div>
 
       {loading ? (
@@ -90,8 +90,8 @@ export default function CareerGuidance() {
         <div className="glass-card rounded-2xl border border-border-card bg-bg-card p-12 text-center flex flex-col items-center justify-center space-y-4 min-h-[300px]">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
           <div>
-            <h3 className="text-sm font-semibold text-text-primary font-bold">Agent is surveying job roadmaps...</h3>
-            <p className="text-xs text-text-muted mt-1">Cross-referencing global career requirements and filtering learning links.</p>
+            <h3 className="text-sm font-semibold text-text-primary font-bold">智能代理正在梳理职业路线...</h3>
+            <p className="text-xs text-text-muted mt-1">正在对照岗位要求并筛选适合的学习资源。</p>
           </div>
         </div>
       ) : careerData ? (
@@ -111,7 +111,7 @@ export default function CareerGuidance() {
                   onClick={() => setCareerData(null)}
                   className="text-xs bg-bg-card-hover border border-border-card hover:text-text-primary px-3 py-1.5 rounded-xl text-text-secondary transition cursor-pointer"
                 >
-                  Edit profile
+                  编辑资料
                 </button>
               </div>
 
@@ -172,7 +172,7 @@ export default function CareerGuidance() {
                   <div key={idx} className="bg-bg-dark/30 border border-border-card/60 p-4 rounded-xl space-y-3">
                     <div>
                       <h4 className="text-xs font-bold text-text-primary leading-tight">{adv.role_title}</h4>
-                      <p className="text-[10px] text-text-muted mt-0.5">Required: {adv.required_skills.join(", ")}</p>
+                      <p className="text-[10px] text-text-muted mt-0.5">所需技能：{adv.required_skills.join("、")}</p>
                     </div>
                     <div className="bg-bg-card border border-border-card/40 p-2.5 rounded-lg">
                       <span className="text-[8px] font-bold text-primary uppercase block mb-1">Portfolio Pitch:</span>
@@ -189,7 +189,7 @@ export default function CareerGuidance() {
             <div className="glass-card rounded-2xl border p-6 bg-bg-card space-y-4">
               <div>
                 <h3 className="text-sm font-bold text-text-primary pb-1">Skills Gap Analysis</h3>
-                <p className="text-[10px] text-text-muted leading-relaxed">We cross-referenced your skills against typical requirements for {careerData.target_career}.</p>
+                <p className="text-[10px] text-text-muted leading-relaxed">已将你的技能与 {careerData.target_career} 岗位的常见要求进行对照。</p>
               </div>
 
               <div className="space-y-3 pt-2 border-t border-border-card/20">
@@ -244,41 +244,41 @@ export default function CareerGuidance() {
 
             {/* Target Role input */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Dream Career Role</label>
+              <label className="text-xs font-semibold text-text-secondary">目标职业</label>
               <input
                 type="text"
                 required
                 value={career}
                 onChange={(e) => setCareer(e.target.value)}
-                placeholder="e.g. AI Engineer, React Frontend Developer, Data Analyst"
+                placeholder="例如：AI Engineer、React Frontend Developer、Data Analyst"
                 className="input-field"
               />
             </div>
 
             {/* Student Level */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Your Academic Category</label>
+              <label className="text-xs font-semibold text-text-secondary">当前学习身份</label>
               <select
                 value={academicLevel}
                 onChange={(e) => setAcademicLevel(e.target.value)}
                 className="input-field bg-bg-dark"
               >
-                <option value="Polytechnic">Polytechnic Student</option>
-                <option value="University">University Student</option>
-                <option value="Self-Learner">Self-Learner / Bootcamp Grad</option>
-                <option value="Job Seeker">Active Job Seeker</option>
+                <option value="Polytechnic">理工学院学生</option>
+                <option value="University">大学生</option>
+                <option value="Self-Learner">自学者 / 训练营毕业生</option>
+                <option value="Job Seeker">正在求职</option>
               </select>
             </div>
 
             {/* Current Skills list tags */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Current Skills (What you already know)</label>
+              <label className="text-xs font-semibold text-text-secondary">当前技能（已经掌握的内容）</label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={skillInput}
                   onChange={(e) => setSkillInput(e.target.value)}
-                  placeholder="e.g. Python, SQL, HTML, Git"
+                  placeholder="例如：Python、SQL、HTML、Git"
                   className="input-field flex-1"
                 />
                 <button
@@ -313,13 +313,13 @@ export default function CareerGuidance() {
 
             {/* Interests list tags */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Interests / Fields of Curiosity</label>
+              <label className="text-xs font-semibold text-text-secondary">兴趣方向</label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={interestInput}
                   onChange={(e) => setInterestInput(e.target.value)}
-                  placeholder="e.g. Finance, Healthcare, Gaming, Security"
+                  placeholder="例如：Finance、Healthcare、Gaming、Security"
                   className="input-field flex-1"
                 />
                 <button
@@ -356,7 +356,7 @@ export default function CareerGuidance() {
               type="submit"
               className="w-full bg-primary hover:bg-primary-hover font-semibold text-sm text-white py-3 rounded-xl shadow-lg shadow-primary/20 transition cursor-pointer"
             >
-              Analyze Skills Gap & Map Path
+              分析能力差距并生成路线
             </button>
           </form>
         </div>

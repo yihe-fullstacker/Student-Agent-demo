@@ -45,7 +45,7 @@ export default function ExamPrep() {
       setPrepData(res);
     } catch (e) {
       console.error(e);
-      alert("Error generating materials. Please try again.");
+      alert("生成备考资料失败，请重试。");
     } finally {
       setLoading(false);
     }
@@ -123,7 +123,7 @@ export default function ExamPrep() {
       {/* Page header */}
       <div>
         <h1 className="text-xl font-bold text-text-primary">Exam Preparation Agent</h1>
-        <p className="text-xs text-text-secondary">Generate summaries, solve interactive quizzes, and study sample exam questions to strengthen your confidence.</p>
+        <p className="text-xs text-text-secondary">生成知识总结、完成互动测验并练习示例考题，帮助你增强考试信心。</p>
       </div>
 
       {loading ? (
@@ -131,8 +131,8 @@ export default function ExamPrep() {
         <div className="glass-card rounded-2xl border border-border-card bg-bg-card p-12 text-center flex flex-col items-center justify-center space-y-4 min-h-[300px]">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
           <div>
-            <h3 className="text-sm font-semibold text-text-primary font-bold">Agent is formulating questions...</h3>
-            <p className="text-xs text-text-muted mt-1">Reviewing conceptual boundaries and constructing practice sets.</p>
+            <h3 className="text-sm font-semibold text-text-primary font-bold">智能代理正在设计问题...</h3>
+            <p className="text-xs text-text-muted mt-1">正在梳理知识范围并生成练习题目。</p>
           </div>
         </div>
       ) : prepData ? (
@@ -149,7 +149,7 @@ export default function ExamPrep() {
               onClick={() => setPrepData(null)}
               className="text-xs border border-border-card bg-bg-card-hover px-3 py-2 rounded-xl text-text-secondary hover:text-text-primary transition cursor-pointer"
             >
-              Study Different Topic
+              学习其他主题
             </button>
           </div>
 
@@ -162,7 +162,7 @@ export default function ExamPrep() {
               }`}
             >
               <BookOpen className="h-4 w-4" />
-              Summary
+              知识概要
             </button>
             <button
               onClick={() => setActiveTab("quiz")}
@@ -171,7 +171,7 @@ export default function ExamPrep() {
               }`}
             >
               <HelpCircle className="h-4 w-4" />
-              MCQ Quiz ({prepData.quizzes?.length || 0})
+              选择题练习（{prepData.quizzes?.length || 0}）
             </button>
             <button
               onClick={() => setActiveTab("questions")}
@@ -180,7 +180,7 @@ export default function ExamPrep() {
               }`}
             >
               <GraduationCap className="h-4 w-4" />
-              Sample Q&As
+              示例问答
             </button>
             <button
               onClick={() => setActiveTab("checklist")}
@@ -189,7 +189,7 @@ export default function ExamPrep() {
               }`}
             >
               <ListChecks className="h-4 w-4" />
-              Revision Tasks
+              复习任务
             </button>
           </div>
 
@@ -258,7 +258,7 @@ export default function ExamPrep() {
                           <div className="mt-3 pl-7 border-t border-border-card/20 pt-3 flex gap-2 text-[10px] text-text-secondary leading-relaxed">
                             <AlertCircle className="h-4 w-4 text-primary shrink-0" />
                             <div>
-                              <span className="font-bold text-text-primary">Explanation: </span>
+                              <span className="font-bold text-text-primary">解析：</span>
                               {q.explanation}
                             </div>
                           </div>
@@ -267,7 +267,7 @@ export default function ExamPrep() {
                     );
                   })
                 ) : (
-                  <div className="text-center py-12 text-text-muted text-xs">No quiz questions generated for this focus. Try generating with format "All" or "MCQs".</div>
+                  <div className="text-center py-12 text-text-muted text-xs">当前范围未生成测验题，请尝试选择“All Formats”或“MCQ Quiz Practice Only”。</div>
                 )}
               </div>
             )}
@@ -290,7 +290,7 @@ export default function ExamPrep() {
                     </details>
                   ))
                 ) : (
-                  <div className="text-center py-12 text-text-muted text-xs">No sample questions available.</div>
+                  <div className="text-center py-12 text-text-muted text-xs">暂无示例问题。</div>
                 )}
               </div>
             )}
@@ -324,13 +324,13 @@ export default function ExamPrep() {
 
             {/* Topic Input */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Study Topic</label>
+              <label className="text-xs font-semibold text-text-secondary">学习主题</label>
               <input
                 type="text"
                 required
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                placeholder="e.g. Database Normalization, Big O Notation, Mitosis"
+                placeholder="例如：Database Normalization、Big O Notation、Mitosis"
                 className="input-field"
               />
             </div>
@@ -338,29 +338,29 @@ export default function ExamPrep() {
             <div className="grid gap-4 sm:grid-cols-2">
               {/* Format selection */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-text-secondary">Study Materials Format</label>
+                <label className="text-xs font-semibold text-text-secondary">学习资料形式</label>
                 <select
                   value={format}
                   onChange={(e) => setFormat(e.target.value)}
                   className="input-field bg-bg-dark"
                 >
-                  <option value="All">All Formats (Summary + MCQs + Q&As)</option>
-                  <option value="MCQs">MCQ Quiz Practice Only</option>
-                  <option value="Summary">Markdown Revision Guides Only</option>
+                  <option value="All">全部形式（概要 + 选择题 + 问答）</option>
+                  <option value="MCQs">仅选择题练习</option>
+                  <option value="Summary">仅 Markdown 复习指南</option>
                 </select>
               </div>
 
               {/* Difficulty level */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-text-secondary">Assessment Difficulty</label>
+                <label className="text-xs font-semibold text-text-secondary">测评难度</label>
                 <select
                   value={difficulty}
                   onChange={(e) => setDifficulty(e.target.value)}
                   className="input-field bg-bg-dark"
                 >
-                  <option value="Beginner">Beginner (Basic vocab & recall)</option>
-                  <option value="Intermediate">Intermediate (Application & calculations)</option>
-                  <option value="Advanced">Advanced (Design, theory & edge cases)</option>
+                  <option value="Beginner">初级（基础概念与记忆）</option>
+                  <option value="Intermediate">中级（应用与计算）</option>
+                  <option value="Advanced">高级（设计、理论与边界情况）</option>
                 </select>
               </div>
             </div>
@@ -368,8 +368,8 @@ export default function ExamPrep() {
             {/* Quiz count slider */}
             <div className="flex flex-col gap-1.5">
               <div className="flex justify-between items-center">
-                <label className="text-xs font-semibold text-text-secondary">Number of MCQ Questions</label>
-                <span className="text-xs font-bold text-primary">{numQuestions} Questions</span>
+                <label className="text-xs font-semibold text-text-secondary">选择题数量</label>
+                <span className="text-xs font-bold text-primary">{numQuestions} 题</span>
               </div>
               <input
                 type="range"
@@ -385,7 +385,7 @@ export default function ExamPrep() {
               type="submit"
               className="w-full bg-primary hover:bg-primary-hover font-semibold text-sm text-white py-3 rounded-xl shadow-lg shadow-primary/20 transition cursor-pointer"
             >
-              Compose Exam Prep Guide
+              生成备考指南
             </button>
           </form>
         </div>
