@@ -13,6 +13,12 @@ import {
 } from "lucide-react";
 import { apiService } from "../services/api";
 
+const difficultyLabels = {
+  Beginner: "初级",
+  Intermediate: "中级",
+  Advanced: "高级",
+};
+
 export default function ProjectRecommend() {
   // Form input states
   const [domain, setDomain] = useState("AI & Machine Learning");
@@ -87,7 +93,7 @@ export default function ProjectRecommend() {
     <div className="space-y-8 animate-fade-in pb-12">
       {/* Intro */}
       <div>
-        <h1 className="text-xl font-bold text-text-primary">Project Recommendation Agent</h1>
+        <h1 className="text-xl font-bold text-text-primary">项目推荐智能代理</h1>
         <p className="text-xs text-text-secondary">根据你的技术栈生成完整作品集项目方案，包括功能规划、实施里程碑和可直接使用的 GitHub README 模板。</p>
       </div>
 
@@ -106,7 +112,7 @@ export default function ProjectRecommend() {
           
           {/* Projects lists tabs on left column */}
           <div className="space-y-4">
-            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">Recommendations</h3>
+            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">项目推荐</h3>
             <div className="space-y-3">
               {projectData.projects && projectData.projects.map((proj, idx) => (
                 <button
@@ -125,7 +131,7 @@ export default function ProjectRecommend() {
                     <span className={`text-[8px] font-bold px-2 py-0.5 rounded ${
                       proj.difficulty === "Advanced" ? "bg-accent/15 text-accent" : "bg-primary/15 text-primary"
                     }`}>
-                      {proj.difficulty}
+                      {difficultyLabels[proj.difficulty] || proj.difficulty}
                     </span>
                     <span className="text-[9px] text-text-muted">{scope === "Individual" ? "个人项目" : "团队项目"}</span>
                   </div>
@@ -156,7 +162,7 @@ export default function ProjectRecommend() {
 
                 {/* Tech Stack tags */}
                 <div className="space-y-1.5">
-                  <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Suggested Tech Stack</h4>
+                  <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider">建议技术栈</h4>
                   <div className="flex flex-wrap gap-1.5">
                     {projectData.projects[activeProjectIdx].suggested_tech_stack.map((t, idx) => (
                       <span key={idx} className="text-[9px] font-bold bg-primary/10 border border-primary/20 text-primary px-2.5 py-1 rounded-lg">
@@ -170,7 +176,7 @@ export default function ProjectRecommend() {
                 <div className="space-y-3 pt-2">
                   <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
                     <ListTodo className="h-4 w-4 text-secondary" />
-                    Core Project Features
+                    项目核心功能
                   </h4>
                   <ul className="grid gap-2 sm:grid-cols-2">
                     {projectData.projects[activeProjectIdx].key_features.map((feat, idx) => (
@@ -186,7 +192,7 @@ export default function ProjectRecommend() {
                 <div className="space-y-3 pt-2">
                   <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
                     <BookOpen className="h-4 w-4 text-primary" />
-                    Implementation Milestones
+                    实施里程碑
                   </h4>
                   <div className="grid gap-3 sm:grid-cols-3">
                     {projectData.projects[activeProjectIdx].implementation_milestones.map((ms, idx) => (
@@ -206,7 +212,7 @@ export default function ProjectRecommend() {
                   <div className="flex justify-between items-center">
                     <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
                       <Terminal className="h-4 w-4 text-success" />
-                      GitHub README.md Template
+                      GitHub README.md 模板
                     </h4>
                     <button
                       onClick={() => handleCopyReadme(projectData.projects[activeProjectIdx].readme_template, activeProjectIdx)}
@@ -241,7 +247,7 @@ export default function ProjectRecommend() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <h3 className="text-base font-bold text-text-primary flex items-center gap-2 border-b border-border-card/30 pb-3">
               <FolderGit2 className="h-5 w-5 text-primary" />
-              Configure Project Advisor
+              配置项目推荐参数
             </h3>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -253,8 +259,8 @@ export default function ProjectRecommend() {
                   onChange={(e) => setDomain(e.target.value)}
                   className="input-field bg-bg-dark"
                 >
-                  <option value="Web Development">Web 开发</option>
-                  <option value="AI & Machine Learning">AI 与机器学习</option>
+                  <option value="Web Development">网页开发</option>
+                  <option value="AI & Machine Learning">人工智能与机器学习</option>
                   <option value="Software Engineering">软件工程</option>
                   <option value="Mobile Applications">移动应用</option>
                 </select>

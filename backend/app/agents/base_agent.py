@@ -12,6 +12,14 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar('T', bound=BaseModel)
 
+LANGUAGE_INSTRUCTION = (
+    "All user-facing content must be written in Simplified Chinese, including summaries, "
+    "headings, questions, answer options, explanations, descriptions, checklists, advice, "
+    "and activity text. Preserve project names, agent names, programming terms, code, "
+    "resource names, and user-provided topic names in their original language. "
+    "Do not translate JSON field names or schema keys."
+)
+
 class BaseAgent:
     def __init__(self, api_key: str = ""):
         # Determine which API key to use (dynamic request override or env variable)
@@ -50,7 +58,7 @@ class BaseAgent:
                     model="gemini-2.5-flash",
                     contents=prompt,
                     config=types.GenerateContentConfig(
-                        system_instruction=system_instruction,
+                        system_instruction=f"{system_instruction}\n\n{LANGUAGE_INSTRUCTION}",
                         response_mime_type="application/json",
                         response_schema=response_schema,
                         temperature=0.2,  # Low temperature for structured reasoning
@@ -112,6 +120,7 @@ class BaseAgent:
                 questions_prompt = (
                     f"Based on the user's query: '{user_message}' and your response: '{response.text[:200]}...', "
                     f"generate 3 short, relevant follow-up questions the student might ask next. "
+                    f"Write every question in Simplified Chinese. "
                     f"Return them as a JSON list of strings (e.g. [\"question 1\", \"question 2\"])."
                 )
                 
@@ -126,9 +135,9 @@ class BaseAgent:
                     suggested_qs = json.loads(q_resp.text)
                 except Exception:
                     suggested_qs = [
-                        "Can you explain this topic in more detail?",
-                        "How can I apply this in a real project?",
-                        "What study resources would you recommend?"
+                        "可以更详细地解释这个主题吗？",
+                        "如何把这些知识应用到真实项目中？",
+                        "你推荐哪些学习资源？"
                     ]
                 
                 return response.text, suggested_qs

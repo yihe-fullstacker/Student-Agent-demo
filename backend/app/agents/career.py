@@ -42,8 +42,8 @@ class CareerAgent(BaseAgent):
                 is_acquired = any(skill.lower() in cs or cs in skill.lower() for cs in current_skills_lower)
                 status = "Acquired" if is_acquired else "Gap"
                 action = (
-                    "Keep building projects to reinforce this skill." if is_acquired 
-                    else f"Learn the basics of {skill} through free documentation and build 2 small practice tools."
+                    "继续通过项目实践巩固这项技能。" if is_acquired
+                    else f"通过免费文档学习 {skill} 的基础知识，并完成 2 个小型练习工具。"
                 )
                 skills_gap.append(SkillGap(
                     skill_name=skill,
@@ -54,23 +54,23 @@ class CareerAgent(BaseAgent):
             # Roadmap phases
             roadmap = [
                 RoadmapPhase(
-                    phase_name="Phase 1: Foundations & Version Control",
-                    duration="Month 1",
-                    description="Master language syntax and learn collaborative git commands.",
+                    phase_name="第一阶段：基础与版本控制",
+                    duration="第 1 个月",
+                    description="掌握编程语言语法，并学习团队协作常用的 Git 命令。",
                     skills_to_learn=[s for s in matched_skills[:3]],
                     resources=["W3Schools", "MDN Web Docs", "GitHub Learning Lab"]
                 ),
                 RoadmapPhase(
-                    phase_name="Phase 2: Core Engineering & Frameworks",
-                    duration="Months 2-3",
-                    description="Deep dive into domain-specific frameworks, routing, and database integrations.",
+                    phase_name="第二阶段：核心工程与框架",
+                    duration="第 2-3 个月",
+                    description="深入学习领域专用框架、路由设计以及数据库集成。",
                     skills_to_learn=[s for s in matched_skills[3:6]],
                     resources=["Official Documentation", "freeCodeCamp YouTube guides", "Roadmap.sh"]
                 ),
                 RoadmapPhase(
-                    phase_name="Phase 3: Portfolio Projects & Capstones",
-                    duration="Month 4",
-                    description="Build full-stack end-to-end applications to host on GitHub and deploy live.",
+                    phase_name="第三阶段：作品集与综合项目",
+                    duration="第 4 个月",
+                    description="构建完整的全栈应用，发布到 GitHub 并部署上线。",
                     skills_to_learn=[s for s in matched_skills[6:]],
                     resources=["Vercel/Render Hosting Docs", "Awesome Open Source lists"]
                 )
@@ -79,22 +79,22 @@ class CareerAgent(BaseAgent):
             # Internship advice
             internships = [
                 InternshipAdvice(
-                    role_title=f"Junior {req.target_career} Intern",
+                    role_title=f"{req.target_career} 初级实习生",
                     required_skills=matched_skills[:4],
-                    project_focus=f"Build an end-to-end system integrating APIs with a responsive database interface reflecting interests in {', '.join(req.interests[:2])}."
+                    project_focus=f"构建一个端到端系统，将 API 与响应式数据库界面结合，并体现你对 {', '.join(req.interests[:2])} 的兴趣。"
                 ),
                 InternshipAdvice(
-                    role_title="Open Source Contributor",
+                    role_title="开源项目贡献者",
                     required_skills=["Git", "Testing"] + matched_skills[:2],
-                    project_focus="Contribute documentation, unit tests, and minor feature updates to trending GitHub projects."
+                    project_focus="为热门 GitHub 项目贡献文档、单元测试和小型功能改进。"
                 )
             ]
             
             hiring_industries = [
-                "Tech Startups & Agencies",
-                "Financial Institutions & FinTech",
-                "E-Commerce & Retail",
-                "Healthcare & BioTech Tech Teams"
+                "科技初创公司与技术机构",
+                "金融机构与金融科技公司",
+                "电子商务与零售企业",
+                "医疗健康与生物科技技术团队"
             ]
             
             return CareerGuidanceResponse(

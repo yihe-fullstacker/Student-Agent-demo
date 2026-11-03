@@ -7,7 +7,7 @@ export default function ChatBot() {
   const [messages, setMessages] = useState([
     {
       role: "model",
-      content: "你好！我是你的 **Academic and Career Success Agent**。今天我可以怎样帮助你提升学习，或规划职业发展路线？"
+      content: "你好！我是你的 **学业与职业成功智能助手**。今天我可以怎样帮助你提升学习，或规划职业发展路线？"
     }
   ]);
   const [input, setInput] = useState("");
@@ -111,7 +111,7 @@ export default function ChatBot() {
                 <Sparkles className="h-4.5 w-4.5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-text-primary">Academic & Career AI</h3>
+                <h3 className="text-sm font-bold text-text-primary">学业与职业人工智能助手</h3>
                 <span className="text-[10px] text-success flex items-center gap-1 font-medium">
                   <span className="h-1.5 w-1.5 rounded-full bg-success animate-ping"></span>
                   在线学习导师

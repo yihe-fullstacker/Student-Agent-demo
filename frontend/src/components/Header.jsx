@@ -12,7 +12,7 @@ export default function Header({ currentPage, toggleSidebar }) {
     navigate(PATHS.HOME, { replace: true });
   };
   const [hasApiKey, setHasApiKey] = useState(false);
-  const [studentName, setStudentName] = useState("Success Explorer");
+  const [studentName, setStudentName] = useState("学习探索者");
 
   useEffect(() => {
     // Check if key exists in local storage
@@ -39,14 +39,14 @@ export default function Header({ currentPage, toggleSidebar }) {
 
   const getPageTitle = () => {
     switch (currentPage) {
-      case "home": return "Overview Dashboard";
-      case "dashboard": return "My Learning Analytics";
-      case "planner": return "AI Study Planner";
-      case "examprep": return "Exam Prep Agent";
-      case "career": return "Career Guidance Agent";
-      case "projects": return "Project Recommendations";
-      case "settings": return "Agent Settings";
-      default: return "Smart Student Success Agent";
+      case "home": return "概览";
+      case "dashboard": return "学习分析";
+      case "planner": return "学习计划";
+      case "examprep": return "考试备考";
+      case "career": return "职业指导";
+      case "projects": return "项目推荐";
+      case "settings": return "智能代理设置";
+      default: return "学习成功智能助理";
     }
   };
 

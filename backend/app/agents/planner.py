@@ -35,37 +35,38 @@ class PlannerAgent(BaseAgent):
                 weeks = 4  # Default to 4 weeks if date format is invalid or in past
             
             # Generate custom topics based on subject and weak topics
-            standard_topics = ["Introduction & Core Fundamentals", "Intermediate Concepts & Structuring", "Advanced Implementation & Practice", "Mock Testing & Final Review"]
+            standard_topics = ["入门与核心基础", "进阶概念与知识结构", "高级实践与项目应用", "模拟测试与最终复习"]
             if req.weak_topics:
                 # Merge weak topics into the plan topics
-                topics_list = [f"Fundamentals & {req.weak_topics[0]}"]
+                primary_topic = req.weak_topics[0]
+                topics_list = [primary_topic if "基础" in primary_topic else f"{primary_topic} 基础"]
                 for wt in req.weak_topics[1:]:
-                    topics_list.append(f"Deep dive into {wt}")
+                    topics_list.append(f"深入学习 {wt}")
                 while len(topics_list) < weeks:
-                    topics_list.append(f"Comprehensive revision of {req.subject_name}")
-                topics_list.append("Practice Exams & Revision")
+                    topics_list.append(f"{req.subject_name} 综合复习")
+                topics_list.append("练习题与阶段复习")
             else:
                 topics_list = standard_topics
                 while len(topics_list) < weeks:
-                    topics_list.append(f"Extended study of {req.subject_name}")
-                topics_list[-1] = "Practice Exams & Revision"
+                    topics_list.append(f"{req.subject_name} 拓展学习")
+                topics_list[-1] = "练习题与阶段复习"
             
             weekly_schedules = []
             for w in range(1, weeks + 1):
-                weekly_goal = f"Master {topics_list[w-1]} and complete practice exercises."
+                weekly_goal = f"掌握“{topics_list[w-1]}”，并完成配套练习。"
                 
                 days = []
-                days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+                days_of_week = ["周一", "周二", "周三", "周四", "周五"]
                 for i, day in enumerate(days_of_week):
                     priority = "High" if (i % 2 == 0 or any(wt.lower() in topics_list[w-1].lower() for wt in req.weak_topics)) else "Medium"
                     
-                    subtopic = f"{topics_list[w-1]} - Section {i+1}"
+                    subtopic = f"{topics_list[w-1]} - 第 {i + 1} 节"
                     activities = [
-                        f"Read study guides or textbooks on {subtopic}",
-                        f"Solve 5 practice problems on {subtopic}",
+                        f"阅读 {subtopic} 的学习指南或教材",
+                        f"完成 5 道关于 {subtopic} 的练习题",
                     ]
                     if priority == "High":
-                        activities.append(f"Write summary notes for {subtopic}")
+                        activities.append(f"整理 {subtopic} 的总结笔记")
                     
                     days.append(DailyPlan(
                         day_name=day,
@@ -84,29 +85,29 @@ class PlannerAgent(BaseAgent):
             
             milestones = [
                 Milestone(
-                    title=f"Week 1 Benchmark",
-                    target_date="End of Week 1",
-                    description=f"Complete fundamentals of {req.subject_name} and solve introductory assignments."
+                    title="第一周基准测试",
+                    target_date="第一周结束",
+                    description=f"完成 {req.subject_name} 的基础内容并解答入门练习。"
                 )
             ]
             if weeks > 1:
                 milestones.append(Milestone(
-                    title="Weak Topics Mastery",
-                    target_date=f"End of Week {weeks // 2 + 1}",
-                    description=f"Complete review and exercises for weak topics: {', '.join(req.weak_topics[:3])}."
+                    title="薄弱主题掌握",
+                    target_date=f"第 {weeks // 2 + 1} 周结束",
+                    description=f"完成以下薄弱主题的复习与练习：{', '.join(req.weak_topics[:3])}。"
                 ))
             milestones.append(Milestone(
-                title="Exam Readiness",
-                target_date="3 Days before Exam",
-                description="Achieve >80% on mock quizzes and complete the revision checklist."
+                title="考试准备度",
+                target_date="考试前 3 天",
+                description="模拟测验正确率达到 80% 以上，并完成复习清单。"
             ))
             
             checklist = [
-                f"Review summary notes for all key chapters of {req.subject_name}",
-                f"Spend extra time reviewing notes on {', '.join(req.weak_topics[:3])}",
-                "Take at least two full-length mock exams",
-                "Ensure all formulas and definitions are memorized",
-                "Review mistake logs from practice quizzes"
+                f"复习 {req.subject_name} 各重点章节的总结笔记",
+                f"额外安排时间复习以下主题笔记：{', '.join(req.weak_topics[:3])}",
+                "至少完成两套完整的模拟考试",
+                "确保熟记所有公式和定义",
+                "回顾练习测验中的错题记录"
             ]
             
             return StudyPlan(

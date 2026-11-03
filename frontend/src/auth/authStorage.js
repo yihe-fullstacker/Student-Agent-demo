@@ -15,7 +15,7 @@ export function getStoredUser() {
 }
 
 export function persistAuth({ email, name, remember }) {
-  const displayName = name?.trim() || email.split("@")[0] || "Success Explorer";
+  const displayName = name?.trim() || email.split("@")[0] || "学习探索者";
   const user = {
     email: email.trim(),
     name: displayName,

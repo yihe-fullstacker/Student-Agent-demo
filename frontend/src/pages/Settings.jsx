@@ -3,7 +3,7 @@ import { Sparkles, Key, User, BookOpen, Check, ShieldAlert } from "lucide-react"
 
 export default function Settings() {
   const [apiKey, setApiKey] = useState("");
-  const [profileName, setProfileName] = useState("Success Explorer");
+  const [profileName, setProfileName] = useState("学习探索者");
   const [institution, setInstitution] = useState("Kaggle AI Academy");
   const [major, setMajor] = useState("Computer Science");
   
@@ -30,7 +30,7 @@ export default function Settings() {
       localStorage.removeItem("student_gemini_api_key");
     }
 
-    localStorage.setItem("student_profile_name", profileName.trim() || "Success Explorer");
+    localStorage.setItem("student_profile_name", profileName.trim() || "学习探索者");
     localStorage.setItem("student_profile_institution", institution.trim());
     localStorage.setItem("student_profile_major", major.trim());
 
@@ -50,7 +50,7 @@ export default function Settings() {
     <div className="space-y-8 animate-fade-in pb-12">
       {/* Intro */}
       <div>
-        <h1 className="text-xl font-bold text-text-primary">Agent Settings</h1>
+        <h1 className="text-xl font-bold text-text-primary">智能代理设置</h1>
         <p className="text-xs text-text-secondary">配置个人资料并关联 Gemini API 密钥，以启用实时智能代理推理。</p>
       </div>
 
@@ -60,7 +60,7 @@ export default function Settings() {
         <div className="glass-card rounded-2xl border p-6 bg-bg-card space-y-6">
           <h3 className="text-sm font-bold text-text-primary flex items-center gap-2 border-b border-border-card/30 pb-3">
             <User className="h-4.5 w-4.5 text-primary" />
-            Student Credentials
+            学生资料
           </h3>
 
           <form onSubmit={handleSave} className="space-y-4">
@@ -118,7 +118,7 @@ export default function Settings() {
           <div className="space-y-4">
             <h3 className="text-sm font-bold text-text-primary flex items-center gap-2 border-b border-border-card/30 pb-3">
               <Key className="h-4.5 w-4.5 text-secondary animate-pulse" />
-              Gemini API Access Key
+              Gemini API 访问密钥
             </h3>
 
             <div className="space-y-1.5">
@@ -136,7 +136,7 @@ export default function Settings() {
             <div className="flex gap-2 items-start bg-yellow-500/10 border border-yellow-500/25 p-3.5 rounded-xl text-[10px] text-yellow-300">
               <ShieldAlert className="h-5 w-5 shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold">Offline Demo Mode Notice:</span>
+                <span className="font-bold">离线演示模式说明：</span>
                 <p className="mt-1">如果未提供 API 密钥，或后端服务器没有配置密钥，应用将使用根据输入生成的结构化模拟内容运行。如需体验实时大模型推理，请在上方填写 Gemini 密钥。</p>
               </div>
             </div>

@@ -22,42 +22,42 @@ class ExamPrepAgent(BaseAgent):
         def fallback():
             # Create a high-quality Markdown summary based on the topic
             summary_content = (
-                f"# Study Summary: {req.topic} ({req.difficulty} Level)\n\n"
-                f"## 1. Overview and Core Concepts\n"
-                f"This revision summary covers the core paradigms of **{req.topic}** tailored for {req.difficulty} learners. "
-                f"Mastering these ideas is essential for succeeding in examinations.\n\n"
-                f"## 2. Key Terminology & Definitions\n"
-                f"- **Core Component**: The foundational elements that define the system structure.\n"
-                f"- **Optimization**: The processes used to maximize efficiency or accuracy.\n"
-                f"- **Validation**: Testing against independent datasets or benchmarks to ensure generalization.\n\n"
-                f"## 3. Critical Analytical Breakdown\n"
-                f"When discussing {req.topic} in exams, always structure your answers by stating the theoretical definition, "
-                f"providing a practical diagram or formula, and listing real-world applications and edge cases (e.g., error thresholds, scalability limits).\n\n"
-                f"## 4. Summary Formulas and Rules of Thumb\n"
-                f"* *Rule of 80/20*: 80% of problems in this domain arise from 20% of system configurations.\n"
-                f"* *Accuracy metric*: Check true positives vs false positives to establish correct performance."
+                f"# 学习概要：{req.topic}（{req.difficulty} 难度）\n\n"
+                f"## 1. 知识概览与核心概念\n"
+                f"本复习概要围绕 **{req.topic}** 的核心知识展开，内容适合 {req.difficulty} 阶段的学习者。"
+                f"掌握这些内容是通过考试的关键。\n\n"
+                f"## 2. 关键术语与定义\n"
+                f"- **核心组成**：定义系统结构的基础要素。\n"
+                f"- **优化**：用于提升效率或准确性的方法。\n"
+                f"- **验证**：使用独立数据集或基准进行测试，以确认模型能够泛化。\n\n"
+                f"## 3. 重点分析\n"
+                f"考试中讨论 {req.topic} 时，建议先说明理论定义，再给出图示或公式，"
+                f"最后分析实际应用和边界情况，例如误差阈值与可扩展性限制。\n\n"
+                f"## 4. 常用公式与经验规则\n"
+                f"* *80/20 法则*：该领域约 80% 的问题通常来自 20% 的系统配置。\n"
+                f"* *准确性指标*：比较真正例与假正例，判断系统性能是否可靠。"
             )
             
             # Generate important questions
             important_questions = [
                 ImportantQuestion(
-                    question=f"Explain the primary purpose of {req.topic} and outline three real-world use cases.",
+                    question=f"说明 {req.topic} 的主要用途，并列出三个实际应用场景。",
                     sample_answer=(
-                        f"The primary purpose of {req.topic} is to enable systems to analyze data, solve tasks, or optimize workflows. "
-                        "Three key applications include:\n"
-                        "1. Automated decision support systems.\n"
-                        "2. Pattern recognition and classification.\n"
-                        "3. Resource allocation and cost optimization in scalable infrastructures."
+                        f"{req.topic} 的主要用途是帮助系统分析数据、解决任务并优化工作流程。"
+                        "三个典型应用包括：\n"
+                        "1. 自动化决策支持系统。\n"
+                        "2. 模式识别与分类。\n"
+                        "3. 可扩展基础设施中的资源分配与成本优化。"
                     )
                 ),
                 ImportantQuestion(
-                    question=f"What are the main challenges or bottlenecks in implementing {req.topic}, and how are they mitigated?",
+                    question=f"实施 {req.topic} 时主要会遇到哪些挑战或瓶颈？应如何缓解？",
                     sample_answer=(
-                        f"Main challenges in {req.topic} include high computational complexity, data quality issues, and generalization failure (overfitting).\n"
-                        "Mitigations:\n"
-                        "- *Dimensionality reduction* to reduce computational overhead.\n"
-                        "- *Cross-validation* and regularization to improve generalization.\n"
-                        "- *Pre-processing pipelines* to handle missing values and scale features."
+                        f"{req.topic} 的主要挑战包括计算复杂度高、数据质量问题以及模型泛化失败（过拟合）。\n"
+                        "缓解方式：\n"
+                        "- 使用 *降维* 降低计算开销。\n"
+                        "- 通过 *交叉验证* 和正则化改善泛化能力。\n"
+                        "- 建立 *预处理流程* 处理缺失值并统一特征尺度。"
                     )
                 )
             ]
@@ -66,39 +66,39 @@ class ExamPrepAgent(BaseAgent):
             mcqs = [
                 MCQ(
                     id=1,
-                    question=f"Which of the following best describes the main objective of {req.topic}?",
+                    question=f"以下哪一项最准确地描述了 {req.topic} 的主要目标？",
                     options=[
-                        "To store massive files in a decentralized database",
-                        "To extract meaningful insights, automate actions, or make predictions from patterns",
-                        "To style user interfaces using cascading stylesheets",
-                        "To optimize web requests using load balancers only"
+                        "在去中心化数据库中存储海量文件",
+                        "从模式中提取有效信息、自动执行操作或进行预测",
+                        "使用层叠样式表设计用户界面",
+                        "仅通过负载均衡器优化网络请求"
                     ],
                     correct_answer_index=1,
-                    explanation=f"{req.topic} focuses on extracting patterns and making automated decisions. Other options refer to general storage, web design, or network load balancing."
+                    explanation=f"{req.topic} 的核心是从数据中提取模式并支持自动化决策。其他选项分别对应数据存储、网页设计或网络负载均衡。"
                 ),
                 MCQ(
                     id=2,
-                    question="In the context of system evaluations, what does 'Overfitting' imply?",
+                    question="在系统评估中，过拟合（Overfitting）意味着什么？",
                     options=[
-                        "The model performs exceptionally well on unseen data but poorly on training data",
-                        "The model performs poorly on both training and test data",
-                        "The model has memorized the training data details too well, failing to generalize to new test data",
-                        "The model runs too fast to process large databases"
+                        "模型在未见数据上表现很好，但在训练数据上表现很差",
+                        "模型在训练集和测试集上表现都很差",
+                        "模型过度记住了训练数据细节，无法泛化到新的测试数据",
+                        "模型运行速度太快，无法处理大型数据库"
                     ],
                     correct_answer_index=2,
-                    explanation="Overfitting occurs when a model fits the training data too closely (memorizing noise), causing its performance on new, unseen data to degrade significantly."
+                    explanation="过拟合是指模型过度贴合训练数据甚至记住了噪声，导致其在新数据上的性能明显下降。"
                 ),
                 MCQ(
                     id=3,
-                    question=f"Which metric is most critical when evaluating {req.topic} performance under severe class imbalance?",
+                    question=f"在严重类别不平衡的情况下，评估 {req.topic} 性能时最应关注哪个指标？",
                     options=[
-                        "Simple Classification Accuracy",
-                        "F1-Score (Precision and Recall)",
-                        "Execution time in milliseconds",
-                        "Lines of code written"
+                        "简单的分类准确率",
+                        "F1-Score（精确率与召回率）",
+                        "毫秒级执行时间",
+                        "编写的代码行数"
                     ],
                     correct_answer_index=1,
-                    explanation="In imbalanced datasets, simple accuracy is misleading (e.g., predicting the majority class always). The F1-score balances precision and recall, reflecting true performance."
+                    explanation="在类别不平衡的数据集中，单一准确率容易产生误导，例如始终预测多数类也可能获得较高分数。F1-Score 能平衡精确率与召回率，更真实地反映模型表现。"
                 )
             ]
             
@@ -107,24 +107,24 @@ class ExamPrepAgent(BaseAgent):
                 q_id = len(mcqs) + 1
                 mcqs.append(MCQ(
                     id=q_id,
-                    question=f"What is a standard best practice when analyzing {req.topic} in a production environment?",
+                    question=f"在生产环境中分析 {req.topic} 时，以下哪项是标准的最佳实践？",
                     options=[
-                        "Deploy code directly without writing unit tests or validating data quality",
-                        "Implement rigorous logging, validate inputs, and monitor performance drift",
-                        "Delete all historical logs to save disk storage",
-                        "Write code in a single massive file with no modular structures"
+                        "不编写单元测试、不验证数据质量，直接部署代码",
+                        "建立完善的日志记录、验证输入数据并监控性能漂移",
+                        "删除全部历史日志以节省磁盘空间",
+                        "将所有代码写入一个巨大的文件，不采用模块化结构"
                     ],
                     correct_answer_index=1,
-                    explanation="A production environment requires rigorous monitoring, validation, and logging to trace errors and adapt to data drift."
+                    explanation="生产环境需要严格的监控、输入验证和日志记录，以便追踪错误并及时应对数据漂移。"
                 ))
             
             # Revision checklist
             checklist = [
-                f"Define the theoretical foundations of {req.topic}",
-                "Memorize the key equations and architectural structures",
-                "Understand the trade-offs between speed, accuracy, and complexity",
-                "Practice solving at least 5 MCQ questions without looking at options first",
-                "Write a 1-page cheatsheet containing only diagrams and key keywords"
+                f"梳理 {req.topic} 的理论基础",
+                "熟记关键公式与架构结构",
+                "理解速度、准确率和复杂度之间的取舍",
+                "先自行作答，再查看选项，完成至少 5 道选择题",
+                "整理一页只包含图表和关键词的速查表"
             ]
             
             return ExamPrepResponse(

@@ -89,7 +89,7 @@ export default function Sidebar({ currentPage, setCurrentPage, isOpen, toggleSid
               S
             </div>
             <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-text-primary">Success Explorer</p>
+              <p className="truncate text-xs font-semibold text-text-primary">学习探索者</p>
               <p className="truncate text-[10px] text-text-muted">活跃学习者</p>
             </div>
           </div>

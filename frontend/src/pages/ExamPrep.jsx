@@ -122,7 +122,7 @@ export default function ExamPrep() {
     <div className="space-y-8 animate-fade-in pb-12">
       {/* Page header */}
       <div>
-        <h1 className="text-xl font-bold text-text-primary">Exam Preparation Agent</h1>
+        <h1 className="text-xl font-bold text-text-primary">考试备考智能代理</h1>
         <p className="text-xs text-text-secondary">生成知识总结、完成互动测验并练习示例考题，帮助你增强考试信心。</p>
       </div>
 
@@ -141,7 +141,7 @@ export default function ExamPrep() {
           {/* Header Title bar */}
           <div className="glass-card rounded-2xl border p-4 bg-bg-card flex flex-wrap justify-between items-center gap-4">
             <div>
-              <span className="text-[10px] text-primary uppercase font-bold tracking-wider">Topic Preparation Pack</span>
+              <span className="text-[10px] text-primary uppercase font-bold tracking-wider">主题备考包</span>
               <h2 className="text-base font-bold text-text-primary truncate">{prepData.topic}</h2>
             </div>
             
@@ -267,7 +267,7 @@ export default function ExamPrep() {
                     );
                   })
                 ) : (
-                  <div className="text-center py-12 text-text-muted text-xs">当前范围未生成测验题，请尝试选择“All Formats”或“MCQ Quiz Practice Only”。</div>
+                  <div className="text-center py-12 text-text-muted text-xs">当前范围未生成测验题，请尝试选择“全部形式”或“仅选择题练习”。</div>
                 )}
               </div>
             )}
@@ -319,7 +319,7 @@ export default function ExamPrep() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <h3 className="text-base font-bold text-text-primary flex items-center gap-2 border-b border-border-card/30 pb-3">
               <GraduationCap className="h-5 w-5 text-primary" />
-              Configure Topic Exam Prep
+              配置主题备考内容
             </h3>
 
             {/* Topic Input */}
@@ -346,7 +346,7 @@ export default function ExamPrep() {
                 >
                   <option value="All">全部形式（概要 + 选择题 + 问答）</option>
                   <option value="MCQs">仅选择题练习</option>
-                  <option value="Summary">仅 Markdown 复习指南</option>
+                  <option value="Summary">仅结构化文本复习指南</option>
                 </select>
               </div>
 

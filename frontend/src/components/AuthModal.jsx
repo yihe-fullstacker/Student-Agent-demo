@@ -291,7 +291,7 @@ export default function AuthModal({ open, onClose, initialMode = "login", redire
                           type="text"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          placeholder="Success Explorer"
+                          placeholder="学习探索者"
                           className="w-full rounded-2xl border border-transparent bg-slate-100/90 px-4 py-3 text-[14px] text-[#0a152d] outline-none transition focus:border-[#0a152d]/20 focus:bg-white focus:ring-2 focus:ring-[#0a152d]/10"
                         />
                       </label>

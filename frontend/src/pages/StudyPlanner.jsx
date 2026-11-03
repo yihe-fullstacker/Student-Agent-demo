@@ -11,28 +11,26 @@ import {
   AlertCircle
 } from "lucide-react";
 import { apiService } from "../services/api";
+import { translateGeneratedText } from "../utils/translateGeneratedText";
 
-const translateGeneratedText = (text) => {
-  if (!text) return text;
-
-  const replacements = [
-    [/^Master (.+) and complete practice exercises\.$/i, "掌握 $1，并完成练习题。"],
-    [/^Read study guides or textbooks on (.+)$/i, "阅读关于 $1 的学习指南或教材"],
-    [/^Solve 5 practice problems on (.+)$/i, "完成 5 道关于 $1 的练习题"],
-    [/^Write summary notes for (.+)$/i, "为 $1 整理总结笔记"],
-    [/^Complete fundamentals of (.+) and solve introductory assignments\.$/i, "完成 $1 的基础内容并解答入门练习。"],
-    [/^Complete review and exercises for weak topics: (.+)\.$/i, "复习并完成以下薄弱主题的练习：$1。"],
-    [/^Achieve >80% on mock quizzes and complete the revision checklist\.$/i, "模拟测验正确率达到 80% 以上，并完成复习清单。"],
-    [/^Review summary notes for all key chapters of (.+)$/i, "复习 $1 各重点章节的总结笔记"],
-    [/^Spend extra time reviewing notes on (.+)$/i, "额外安排时间复习以下主题笔记：$1"],
-    [/^Take at least two full-length mock exams$/i, "至少完成两套完整的模拟考试"],
-    [/^Ensure all formulas and definitions are memorized$/i, "确保熟记所有公式和定义"],
-    [/^Review mistake logs from practice quizzes$/i, "回顾练习测验中的错题记录"],
-  ];
-
-  const matched = replacements.find(([pattern]) => pattern.test(text));
-  return matched ? text.replace(matched[0], matched[1]) : text;
+const dayLabels = {
+  Monday: "周一",
+  Tuesday: "周二",
+  Wednesday: "周三",
+  Thursday: "周四",
+  Friday: "周五",
+  Saturday: "周六",
+  Sunday: "周日",
 };
+
+const priorityLabels = {
+  High: "高",
+  Medium: "中",
+  Low: "低",
+};
+
+const displayDayName = (day) => dayLabels[day] || day;
+const displayPriority = (priority) => priorityLabels[priority] || priority;
 
 export default function StudyPlanner() {
   // Form state
@@ -162,7 +160,7 @@ export default function StudyPlanner() {
     <div className="space-y-8 animate-fade-in pb-12">
       {/* Introduction */}
       <div>
-        <h1 className="text-xl font-bold text-text-primary">AI Study Planner Agent</h1>
+        <h1 className="text-xl font-bold text-text-primary">学习计划智能代理</h1>
         <p className="text-xs text-text-secondary">根据你的薄弱环节和考试日期，生成并跟踪专属学习时间表。</p>
       </div>
 
@@ -183,14 +181,14 @@ export default function StudyPlanner() {
             <div className="glass-card rounded-2xl border p-6 bg-bg-card space-y-6">
               <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-border-card/30">
                 <div>
-                  <span className="text-[10px] text-primary uppercase font-bold tracking-wider">Active Plan</span>
-                  <h2 className="text-lg font-bold text-text-primary">{studyPlan.subject_name}</h2>
+                  <span className="text-[10px] text-primary uppercase font-bold tracking-wider">当前计划</span>
+                  <h2 className="text-lg font-bold text-text-primary">{translateGeneratedText(studyPlan.subject_name)}</h2>
                 </div>
                 <button 
                   onClick={deletePlan} 
                   className="text-xs bg-accent/10 border border-accent/20 hover:bg-accent/20 text-accent font-bold px-3 py-2 rounded-xl transition cursor-pointer"
                 >
-                  Clear Plan
+                  清除计划
                 </button>
               </div>
 
@@ -206,7 +204,7 @@ export default function StudyPlanner() {
                         : "text-text-secondary hover:bg-bg-card-hover"
                     }`}
                   >
-                    Week {week.week_number}
+                    第 {week.week_number} 周
                   </button>
                 ))}
               </div>
@@ -215,7 +213,7 @@ export default function StudyPlanner() {
               <div className="bg-bg-dark/40 border border-border-card rounded-xl p-4">
                 <h4 className="text-xs font-bold text-secondary flex items-center gap-1.5 mb-1">
                   <Award className="h-4 w-4" />
-                  Weekly Target Goal
+                  每周目标
                 </h4>
                 <p className="text-xs text-text-secondary">
                   {translateGeneratedText(studyPlan.weekly_schedule.find(w => w.week_number === activeWeek)?.weekly_goal)}
@@ -238,15 +236,15 @@ export default function StudyPlanner() {
                       >
                         <div className="flex justify-between items-start gap-4 mb-2">
                           <div>
-                            <span className="text-[10px] text-text-muted font-bold">{day.day_name}</span>
-                            <h4 className="text-sm font-bold text-text-primary">{day.topic}</h4>
+                            <span className="text-[10px] text-text-muted font-bold">{displayDayName(day.day_name)}</span>
+                            <h4 className="text-sm font-bold text-text-primary">{translateGeneratedText(day.topic)}</h4>
                           </div>
                           
                           <div className="flex items-center gap-2">
                             <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${
                               day.priority === "High" ? "bg-accent/10 text-accent" : "bg-warning/10 text-warning"
                             }`}>
-                              {day.priority}
+                              {displayPriority(day.priority)}
                             </span>
                             <span className="text-[10px] text-text-muted">{day.duration_hours} 小时</span>
                           </div>
@@ -256,7 +254,7 @@ export default function StudyPlanner() {
                         <div className="flex flex-wrap gap-1.5 mb-3">
                           {day.subtopics.map((st, sIdx) => (
                             <span key={sIdx} className="text-[9px] bg-bg-card-hover text-text-secondary border border-border-card/40 px-2 py-0.5 rounded">
-                              {st}
+                              {translateGeneratedText(st)}
                             </span>
                           ))}
                         </div>
@@ -296,15 +294,15 @@ export default function StudyPlanner() {
             <div className="glass-card rounded-2xl border p-6 bg-bg-card space-y-4">
               <h3 className="text-sm font-bold text-text-primary flex items-center gap-1.5 pb-2 border-b border-border-card/30">
                 <Bookmark className="h-4.5 w-4.5 text-primary" />
-                Major Milestones
+                主要里程碑
               </h3>
               <div className="space-y-4 relative pl-3 border-l border-border-card/60 ml-2">
                 {studyPlan.milestones.map((ms, idx) => (
                   <div key={idx} className="relative">
                     <div className="absolute -left-[17px] top-1 h-2 w-2 rounded-full bg-primary" />
                     <div>
-                      <span className="text-[9px] text-primary font-bold">{ms.target_date}</span>
-                      <h4 className="text-xs font-bold text-text-primary">{ms.title}</h4>
+                      <span className="text-[9px] text-primary font-bold">{translateGeneratedText(ms.target_date)}</span>
+                      <h4 className="text-xs font-bold text-text-primary">{translateGeneratedText(ms.title)}</h4>
                       <p className="text-[10px] text-text-secondary leading-normal">{translateGeneratedText(ms.description)}</p>
                     </div>
                   </div>
@@ -316,7 +314,7 @@ export default function StudyPlanner() {
             <div className="glass-card rounded-2xl border p-6 bg-bg-card space-y-4">
               <h3 className="text-sm font-bold text-text-primary flex items-center gap-1.5 pb-2 border-b border-border-card/30">
                 <CheckCircle2 className="h-4.5 w-4.5 text-success" />
-                Readiness Checklist
+                备考清单
               </h3>
               <ul className="space-y-3">
                 {studyPlan.exam_readiness_checklist.map((item, idx) => (
@@ -335,7 +333,7 @@ export default function StudyPlanner() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <h3 className="text-base font-bold text-text-primary flex items-center gap-2 border-b border-border-card/30 pb-3">
               <Sparkles className="h-5 w-5 text-primary animate-pulse" />
-              Configure Study Target
+              配置学习目标
             </h3>
 
             {/* Subject name */}
@@ -437,7 +435,7 @@ export default function StudyPlanner() {
             {/* Info warning */}
             <div className="flex gap-2 items-start bg-blue-500/10 border border-blue-500/25 p-3 rounded-xl text-[10px] text-blue-300">
               <AlertCircle className="h-4.5 w-4.5 shrink-0 mt-0.5" />
-              <p>学习计划工具会使用 Gemini AI 合理安排每周任务。前期重点梳理薄弱环节中的定义与练习题，后期逐步转向限时模拟测试。</p>
+              <p>学习计划工具会使用 Gemini 人工智能代理合理安排每周任务。前期重点梳理薄弱环节中的定义与练习题，后期逐步转向限时模拟测试。</p>
             </div>
 
             <button

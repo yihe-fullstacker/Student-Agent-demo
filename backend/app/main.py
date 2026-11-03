@@ -99,6 +99,7 @@ async def chat_assistant(req: ChatRequest, x_gemini_api_key: Optional[str] = Hea
             "with academic planning, exam strategies, skill development, and portfolio projects. "
             "Be encouraging, highly professional, structured, and clear. "
             "Keep your responses relatively brief (150-250 words) and format key terms in bold. "
+            "Always reply in Simplified Chinese. Keep product names, agent names, and technical terms in English when appropriate. "
             "Always keep the conversation focused on educational and career matters. "
             "If the user asks questions outside this context, politely guide them back."
         )
@@ -111,47 +112,46 @@ async def chat_assistant(req: ChatRequest, x_gemini_api_key: Optional[str] = Hea
             msg = req.message.lower()
             
             # Simple rules for interactive fallback replies
-            if "hello" in msg or "hi" in msg:
+            if any(word in msg for word in ("hello", "hi", "你好", "您好")):
                 reply = (
-                    "Hello! I am your **AI Academic & Career Success Assistant**. I'm here to help you: \n\n"
-                    "1. Map out personalized weekly **Study Plans**.\n"
-                    "2. Generate study guides, MCQ practice quizzes, and checklists for **Exam Prep**.\n"
-                    "3. Provide **Career Roadmaps** and analyze skills gaps.\n"
-                    "4. Suggest customized **Portfolio Projects** complete with GitHub READMEs.\n\n"
-                    "What are you studying today, or what is your dream career?"
+                    "你好！我是你的 **AI Academic & Career Success Assistant**。我可以帮助你：\n\n"
+                    "1. 制定个性化的每周 **Study Plans**。\n"
+                    "2. 生成学习指南、选择题练习和 **Exam Prep** 复习清单。\n"
+                    "3. 提供 **Career Roadmaps** 并分析技能差距。\n"
+                    "4. 推荐可写入简历的 **Portfolio Projects**，并生成 GitHub README。\n\n"
+                    "你今天想学习什么，或者你的理想职业是什么？"
                 )
-                qs = ["How do I create a study plan?", "What projects can I build?", "Explain machine learning."]
-            elif "plan" in msg or "study" in msg or "schedule" in msg:
+                qs = ["如何制定学习计划？", "我可以做哪些项目？", "请解释机器学习。"]
+            elif any(word in msg for word in ("plan", "study", "schedule", "计划", "学习", "安排")):
                 reply = (
-                    "To generate a custom study plan, click on the **Study Planner** page! "
-                    "You can enter your subject, exam date, and daily available study hours. "
-                    "I will generate a day-by-day checklist calendar. "
-                    "Would you like me to summarize study techniques like the **Pomodoro technique** or **Spaced Repetition** here?"
+                    "如需生成专属学习计划，请进入 **Study Planner** 页面。"
+                    "填写科目、考试日期和每天可安排的学习时长后，我会为你生成逐日学习清单。"
+                    "你也可以继续询问 **Pomodoro technique** 或 **Spaced Repetition** 等学习方法。"
                 )
-                qs = ["Tell me about Spaced Repetition", "How can I study database systems?", "What are good study habits?"]
-            elif "career" in msg or "job" in msg or "intern" in msg:
+                qs = ["介绍一下 Spaced Repetition", "如何学习数据库系统？", "有哪些好的学习习惯？"]
+            elif any(word in msg for word in ("career", "job", "intern", "职业", "工作", "实习")):
                 reply = (
-                    "Planning your career is exciting! Head over to the **Career Guidance** page. "
-                    "Input your target role (like *Web Developer* or *AI Engineer*), current skills, and interests. "
-                    "I will map out a timeline roadmap and analyze your **skills gaps**.\n\n"
-                    "What field are you looking to break into?"
+                    "职业规划可以从明确目标开始。请进入 **Career Guidance** 页面，"
+                    "填写目标岗位（例如 *Web Developer* 或 *AI Engineer*）、当前技能和兴趣方向。"
+                    "我会为你生成阶段式成长路线，并分析待补齐的 **skills gaps**。\n\n"
+                    "你希望进入哪个行业？"
                 )
-                qs = ["How to become an AI Engineer?", "What skills do I need for software engineering?", "Suggest web development courses."]
-            elif "project" in msg or "readme" in msg or "github" in msg:
+                qs = ["如何成为 AI Engineer？", "软件工程需要哪些技能？", "推荐一些 Web 开发课程。"]
+            elif any(word in msg for word in ("project", "readme", "github", "项目", "作品集")):
                 reply = (
-                    "Building projects is the best way to learn and secure jobs. The **Project Recommendations** page suggests "
-                    "beginner-to-advanced project briefs tailored to your tech stack. It even creates a downloadable **GitHub README.md** template.\n\n"
-                    "What technology stack do you prefer (e.g. React, Python, FastAPI)?"
+                    "实践项目是巩固知识并提升就业竞争力的有效方式。**Project Recommendations** 页面会"
+                    "根据你的技术栈推荐从入门到进阶的项目方案，并生成可直接使用的 **GitHub README.md** 模板。\n\n"
+                    "你偏好使用哪些技术（例如 React、Python、FastAPI）？"
                 )
-                qs = ["Suggest a Python project", "Give me a React portfolio project idea", "What should be in a GitHub README?"]
+                qs = ["推荐一个 Python 项目", "给我一个 React 作品集项目", "GitHub README 应该包含什么？"]
             else:
                 reply = (
-                    f"That's a great question! Regarding your query on **{req.message[:30]}...**, "
-                    "I suggest structure and consistency in your preparation. Focus on creating modular code or summarizing your terms. "
-                    "If you are reviewing a specific subject like " + (f"**{subject}**" if subject else "your courses") + " or aiming for a career like " + (f"**{career}**" if career else "software engineering") + ", "
-                    "try using the specific agents on the sidebar for a deeper analysis."
+                    f"关于你的问题 **{req.message[:30]}...**，建议先拆解目标，再保持稳定、有结构的练习节奏。"
+                    "可以尝试模块化整理知识，或定期复习核心概念。"
+                    "如果你正在学习 " + (f"**{subject}**" if subject else "具体课程") + "，或目标是进入 " + (f"**{career}**" if career else "软件工程领域") + "，"
+                    "可以前往侧边栏对应的智能代理获取更深入的分析。"
                 )
-                qs = ["Give me exam prep tips", "What projects help in a resume?", "How to prepare for coding interviews?"]
+                qs = ["给我一些考试复习建议", "哪些项目适合写在简历中？", "如何准备编程面试？"]
                 
             return reply, qs
             

@@ -81,7 +81,7 @@ export default function CareerGuidance() {
     <div className="space-y-8 animate-fade-in pb-12">
       {/* Intro */}
       <div>
-        <h1 className="text-xl font-bold text-text-primary">Career Guidance Agent</h1>
+        <h1 className="text-xl font-bold text-text-primary">职业指导智能代理</h1>
         <p className="text-xs text-text-secondary">分析能力差距，规划系统学习路径，并探索符合兴趣的作品集方向。</p>
       </div>
 
@@ -105,7 +105,7 @@ export default function CareerGuidance() {
               <div className="flex justify-between items-center pb-4 border-b border-border-card/30">
                 <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
                   <Map className="h-4.5 w-4.5 text-primary" />
-                  Development Roadmap for {careerData.target_career}
+                  {careerData.target_career} 成长路线图
                 </h3>
                 <button
                   onClick={() => setCareerData(null)}
@@ -135,7 +135,7 @@ export default function CareerGuidance() {
 
                       {/* Skills to learn */}
                       <div className="space-y-1 pt-1.5">
-                        <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider block">Key topics to study:</span>
+                        <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider block">重点学习内容：</span>
                         <div className="flex flex-wrap gap-1.5">
                           {phase.skills_to_learn.map((sk, sIdx) => (
                             <span key={sIdx} className="text-[9px] bg-bg-dark/60 text-text-secondary px-2.5 py-1 border border-border-card/40 rounded-lg">
@@ -147,7 +147,7 @@ export default function CareerGuidance() {
 
                       {/* Resources */}
                       <div className="pt-2 border-t border-border-card/10 flex flex-wrap gap-2 items-center text-[10px]">
-                        <span className="text-text-muted font-semibold">Recommended Resources:</span>
+                        <span className="text-text-muted font-semibold">推荐资源：</span>
                         {phase.resources.map((res, rIdx) => (
                           <span key={rIdx} className="bg-secondary/10 border border-secondary/25 text-secondary px-2 py-0.5 rounded-md font-medium">
                             {res}
@@ -164,7 +164,7 @@ export default function CareerGuidance() {
             <div className="glass-card rounded-2xl border p-6 bg-bg-card space-y-4">
               <h3 className="text-sm font-bold text-text-primary flex items-center gap-2 pb-3 border-b border-border-card/30">
                 <Compass className="h-4.5 w-4.5 text-secondary" />
-                Portfolio Strategies & Roles
+                作品集策略与岗位方向
               </h3>
               
               <div className="grid gap-4 sm:grid-cols-2">
@@ -175,7 +175,7 @@ export default function CareerGuidance() {
                       <p className="text-[10px] text-text-muted mt-0.5">所需技能：{adv.required_skills.join("、")}</p>
                     </div>
                     <div className="bg-bg-card border border-border-card/40 p-2.5 rounded-lg">
-                      <span className="text-[8px] font-bold text-primary uppercase block mb-1">Portfolio Pitch:</span>
+                      <span className="text-[8px] font-bold text-primary uppercase block mb-1">作品集展示方向：</span>
                       <p className="text-[10px] text-text-secondary leading-normal">{adv.project_focus}</p>
                     </div>
                   </div>
@@ -188,7 +188,7 @@ export default function CareerGuidance() {
           <div className="space-y-6">
             <div className="glass-card rounded-2xl border p-6 bg-bg-card space-y-4">
               <div>
-                <h3 className="text-sm font-bold text-text-primary pb-1">Skills Gap Analysis</h3>
+                <h3 className="text-sm font-bold text-text-primary pb-1">技能差距分析</h3>
                 <p className="text-[10px] text-text-muted leading-relaxed">已将你的技能与 {careerData.target_career} 岗位的常见要求进行对照。</p>
               </div>
 
@@ -200,12 +200,12 @@ export default function CareerGuidance() {
                       {sk.status === "Acquired" ? (
                         <span className="flex items-center gap-1 text-[9px] font-bold text-success">
                           <CheckCircle className="h-3.5 w-3.5" />
-                          Acquired
+                          已掌握
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 text-[9px] font-bold text-warning">
                           <AlertTriangle className="h-3.5 w-3.5" />
-                          Gap
+                          待提升
                         </span>
                       )}
                     </div>
@@ -219,7 +219,7 @@ export default function CareerGuidance() {
             <div className="glass-card rounded-2xl border p-6 bg-bg-card space-y-4">
               <h3 className="text-sm font-bold text-text-primary flex items-center gap-1.5 pb-2 border-b border-border-card/30">
                 <Briefcase className="h-4.5 w-4.5 text-warning" />
-                Active Hiring Sectors
+                招聘活跃行业
               </h3>
               <ul className="space-y-2">
                 {careerData.industries_hiring.map((ind, idx) => (
@@ -239,7 +239,7 @@ export default function CareerGuidance() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <h3 className="text-base font-bold text-text-primary flex items-center gap-2 border-b border-border-card/30 pb-3">
               <Briefcase className="h-5 w-5 text-primary" />
-              Analyze Career Target
+              分析目标职业
             </h3>
 
             {/* Target Role input */}
