@@ -16,6 +16,8 @@ export default function Header({ currentPage, toggleSidebar }) {
   const [hasApiKey, setHasApiKey] = useState(false);
   const [serverConnected, setServerConnected] = useState(false);
   const [providerName, setProviderName] = useState("");
+  const [modelName, setModelName] = useState("");
+  const [serverModel, setServerModel] = useState("");
   const [studentName, setStudentName] = useState("学习探索者");
 
   useEffect(() => {
@@ -24,12 +26,16 @@ export default function Header({ currentPage, toggleSidebar }) {
       const aiConfig = loadAIConfig();
       const name = localStorage.getItem("student_profile_name");
       setHasApiKey(!!aiConfig.apiKey);
-      setProviderName(aiConfig.providerName);
+      setProviderName(aiConfig.providerShortName || aiConfig.providerName);
+      setModelName(aiConfig.model);
       if (name) setStudentName(name);
     };
 
     // The backend may already hold a key in its .env file
-    apiService.getAIStatus().then((status) => setServerConnected(!!status.configured));
+    apiService.getAIStatus().then((status) => {
+      setServerConnected(!!status.configured);
+      setServerModel(status.model || "");
+    });
 
     checkSettings();
     
@@ -59,7 +65,13 @@ export default function Header({ currentPage, toggleSidebar }) {
   };
 
   const isConnected = hasApiKey || serverConnected;
-  const statusLabel = hasApiKey ? `${providerName || "AI"} 已连接` : "AI 已连接";
+  const statusLabel = (
+    hasApiKey
+      ? [providerName, modelName].filter(Boolean).join(" · ")
+      : serverModel
+        ? `AI · ${serverModel}`
+        : "AI 已连接"
+  ) || "AI 已连接";
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-border-card bg-bg-card/40 px-6 backdrop-blur-md sticky top-0 z-30">

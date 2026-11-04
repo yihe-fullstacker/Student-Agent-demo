@@ -6,6 +6,7 @@ export const AI_PROVIDERS = [
   {
     id: "deepseek",
     name: "DeepSeek",
+    shortName: "DeepSeek",
     baseUrl: "https://api.deepseek.com/v1",
     model: "deepseek-chat",
     docsUrl: "https://platform.deepseek.com/api_keys",
@@ -13,6 +14,7 @@ export const AI_PROVIDERS = [
   {
     id: "qwen",
     name: "通义千问（阿里云百炼）",
+    shortName: "通义千问",
     baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
     model: "qwen-plus",
     docsUrl: "https://bailian.console.aliyun.com/",
@@ -20,6 +22,7 @@ export const AI_PROVIDERS = [
   {
     id: "zhipu",
     name: "智谱 GLM",
+    shortName: "智谱 GLM",
     baseUrl: "https://open.bigmodel.cn/api/paas/v4",
     model: "glm-4-flash",
     docsUrl: "https://open.bigmodel.cn/usercenter/apikeys",
@@ -27,6 +30,7 @@ export const AI_PROVIDERS = [
   {
     id: "moonshot",
     name: "Kimi（月之暗面）",
+    shortName: "Kimi",
     baseUrl: "https://api.moonshot.cn/v1",
     model: "moonshot-v1-8k",
     docsUrl: "https://platform.moonshot.cn/console/api-keys",
@@ -34,6 +38,7 @@ export const AI_PROVIDERS = [
   {
     id: "siliconflow",
     name: "硅基流动 SiliconFlow",
+    shortName: "硅基流动",
     baseUrl: "https://api.siliconflow.cn/v1",
     model: "deepseek-ai/DeepSeek-V3",
     docsUrl: "https://cloud.siliconflow.cn/account/ak",
@@ -41,6 +46,7 @@ export const AI_PROVIDERS = [
   {
     id: "custom",
     name: "自定义（OpenAI 兼容接口）",
+    shortName: "自定义",
     baseUrl: "",
     model: "",
     docsUrl: "",
@@ -71,10 +77,22 @@ export function loadAIConfig() {
   return {
     providerId: provider.id,
     providerName: provider.name,
+    providerShortName: provider.shortName || provider.name,
     apiKey: localStorage.getItem(STORAGE_KEYS.apiKey) || "",
     baseUrl: localStorage.getItem(STORAGE_KEYS.baseUrl) || provider.baseUrl,
     model: localStorage.getItem(STORAGE_KEYS.model) || provider.model,
   };
+}
+
+/** True when the form values differ from what is currently saved. */
+export function hasUnsavedChanges({ providerId, apiKey, baseUrl, model }) {
+  const saved = loadAIConfig();
+  return (
+    saved.providerId !== providerId ||
+    saved.apiKey !== (apiKey || "").trim() ||
+    saved.baseUrl !== (baseUrl || "").trim() ||
+    saved.model !== (model || "").trim()
+  );
 }
 
 function saveOrRemove(key, value) {

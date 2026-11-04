@@ -14,6 +14,7 @@ import {
   CUSTOM_PROVIDER_ID,
   clearAIKey,
   getProvider,
+  hasUnsavedChanges,
   loadAIConfig,
   saveAIConfig,
 } from "../config/aiProviders";
@@ -54,6 +55,8 @@ export default function Settings() {
   const [testResult, setTestResult] = useState(null);
 
   const activeProvider = getProvider(providerId);
+  const savedConfig = loadAIConfig();
+  const isDirty = hasUnsavedChanges({ providerId, apiKey, baseUrl, model });
 
   const handleProviderChange = (event) => {
     const nextId = event.target.value;
@@ -114,9 +117,24 @@ export default function Settings() {
         baseUrl: trimmedBaseUrl,
         model: trimmedModel,
       });
+
+      // A passing test is the strongest signal we have: persist it right away
+      // so the header badge switches to the provider that was just verified.
+      saveAIConfig({
+        providerId,
+        apiKey: apiKey.trim(),
+        baseUrl: trimmedBaseUrl,
+        model: trimmedModel,
+      });
+      setApiKey(apiKey.trim());
+      setBaseUrl(trimmedBaseUrl);
+      setModel(trimmedModel);
+
       setTestResult({
         ok: true,
-        message: `${data.model || trimmedModel} 响应用时 ${data.latencyMs} ms。点击「更新 API 配置」保存后生效。`,
+        message: `${data.model || trimmedModel} 响应用时 ${data.latencyMs} ms，已保存并切换为「${
+          activeProvider.shortName || activeProvider.name
+        }」。`,
       });
     } catch (error) {
       setTestResult({ ok: false, message: error.message });
@@ -302,6 +320,19 @@ export default function Settings() {
                     {testResult.ok ? "连接成功：" : "连接失败："}
                   </span>
                   <p className="mt-1 break-all">{testResult.message}</p>
+                </div>
+              </div>
+            )}
+
+            {isDirty && (
+              <div className="flex gap-2 items-start bg-yellow-500/10 border border-yellow-500/25 p-3.5 rounded-xl text-[10px] text-yellow-300">
+                <ShieldAlert className="h-5 w-5 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">配置尚未保存：</span>
+                  <p className="mt-1">
+                    顶栏目前仍显示已保存的「{savedConfig.providerShortName}」。
+                    点击「更新 API 配置」保存，或让「测试连接」成功一次，会自动保存并切换。
+                  </p>
                 </div>
               </div>
             )}
