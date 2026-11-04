@@ -3,7 +3,12 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.agents.base_agent import AIConfigurationError, AIProviderError, extract_json_object
+from app.agents.base_agent import (
+    AIConfigurationError,
+    AIProviderError,
+    extract_json_object,
+    normalize_chat_reply,
+)
 from app.agents.career import CareerAgent
 from app.agents.exam_prep import ExamPrepAgent
 from app.agents.planner import PlannerAgent
@@ -226,3 +231,44 @@ def test_connection_failure_raises_provider_error():
 
     with pytest.raises(AIProviderError):
         agent.test_connection()
+
+
+def test_chat_request_does_not_force_json_mode():
+    calls = []
+
+    def create(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content="纯文本回答"))]
+        )
+
+    agent = BaseAgent(
+        api_key="test-key",
+        base_url="https://example.com/v1",
+        model="test-model",
+    )
+    agent.client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=create))
+    )
+    agent.is_client_active = True
+
+    reply, _questions = agent.generate_chat_reply(
+        history=[],
+        user_message="你好",
+        system_instruction="你是学习助手",
+        fallback_func=lambda: ("fallback", []),
+    )
+
+    assert reply == "纯文本回答"
+    assert "response_format" not in calls[0]
+    # The follow-up question request is allowed to use JSON mode.
+    assert calls[1]["response_format"] == {"type": "json_object"}
+
+
+def test_normalize_chat_reply_unwraps_json_object():
+    raw = '{"type":"json_object","content":"第一行\\n\\n第二行"}'
+    assert normalize_chat_reply(raw) == "第一行\n\n第二行"
+
+
+def test_normalize_chat_reply_keeps_plain_text():
+    assert normalize_chat_reply("你好！这是普通回答。") == "你好！这是普通回答。"

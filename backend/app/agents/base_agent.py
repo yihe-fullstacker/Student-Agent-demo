@@ -77,6 +77,37 @@ def extract_json_object(raw: str) -> dict[str, Any]:
     return data
 
 
+CHAT_REPLY_KEYS = ("content", "reply", "message", "text", "answer")
+
+
+def normalize_chat_reply(raw: str) -> str:
+    """
+    Chat answers must be plain text. Some providers still wrap them in a JSON
+    object even without JSON mode, which then shows up verbatim in the UI.
+    """
+    text = (raw or "").strip()
+    if not text:
+        return ""
+
+    candidate = text
+    fence = re.search(r"```(?:json)?\s*(.*?)```", candidate, re.DOTALL)
+    if fence:
+        candidate = fence.group(1).strip()
+
+    if candidate.startswith("{") and candidate.endswith("}"):
+        try:
+            data = json.loads(candidate)
+        except ValueError:
+            data = None
+        if isinstance(data, dict):
+            for key in CHAT_REPLY_KEYS:
+                value = data.get(key)
+                if isinstance(value, str) and value.strip():
+                    return value.strip()
+
+    return text
+
+
 class BaseAgent:
     """Shared agent logic for OpenAI-compatible domestic LLM providers."""
 
@@ -197,7 +228,10 @@ class BaseAgent:
         messages.append({"role": "user", "content": user_message})
 
         try:
-            reply = self._complete(messages, temperature=0.7)
+            raw_reply = self._complete(messages, temperature=0.7, json_mode=False)
+            reply = normalize_chat_reply(raw_reply)
+            if not reply:
+                raise AIProviderError("模型返回了空内容")
         except Exception as exc:
             error = AIProviderError(f"{self.model} 调用失败：{exc}")
             if self.allow_fallback:
