@@ -73,7 +73,7 @@ export default function ChatBot() {
         ...prev,
         { 
           role: "model", 
-          content: "抱歉，连接 AI 服务失败。请检查网络连接或 Gemini API 密钥设置。"
+          content: error.message || "抱歉，连接 AI 服务失败。请检查网络连接或在设置页检查 API 密钥。"
         }
       ]);
     } finally {

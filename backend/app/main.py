@@ -1,6 +1,8 @@
-from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
+from dataclasses import dataclass
 from typing import Optional
+
+from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import logging
 
 from app.models import (
@@ -14,12 +16,14 @@ from app.agents.planner import PlannerAgent
 from app.agents.exam_prep import ExamPrepAgent
 from app.agents.career import CareerAgent
 from app.agents.project import ProjectAgent
-from app.agents.base_agent import BaseAgent
+from app.agents.base_agent import BaseAgent, AIConfigurationError, AIProviderError
 from app.config import settings
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+TEST_CONNECTION_TIMEOUT_SECONDS = 20
 
 app = FastAPI(
     title="Smart Student Success Agent API",
@@ -36,63 +40,123 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def get_api_key(x_gemini_api_key: Optional[str] = Header(None)) -> str:
+
+@dataclass(frozen=True)
+class AIConnection:
+    """Provider settings for one request (headers override .env defaults)."""
+
+    api_key: str
+    base_url: str
+    model: str
+
+
+def get_ai_connection(
+    x_ai_api_key: Optional[str] = Header(None),
+    x_ai_base_url: Optional[str] = Header(None),
+    x_ai_model: Optional[str] = Header(None),
+) -> AIConnection:
     """
-    Extract API key from header or environment variable.
+    Resolve the domestic LLM provider configuration.
+
+    The browser sends the values configured on the Settings page through
+    X-AI-Api-Key / X-AI-Base-Url / X-AI-Model; anything missing falls back to .env.
     """
-    key = x_gemini_api_key or settings.GEMINI_API_KEY
-    return key
+    base_url = (x_ai_base_url or settings.AI_BASE_URL or "").strip().rstrip("/")
+    if not base_url.startswith(("http://", "https://")):
+        raise HTTPException(
+            status_code=400,
+            detail=f"AI 接口地址无效：{base_url or '空'}，必须以 http:// 或 https:// 开头。",
+        )
+
+    api_key = (x_ai_api_key or settings.AI_API_KEY or "").strip()
+    model = (x_ai_model or settings.AI_MODEL or "").strip()
+    if not model:
+        raise HTTPException(status_code=400, detail="AI 模型名称不能为空。")
+
+    return AIConnection(api_key=api_key, base_url=base_url, model=model)
+
+
+def _build_agent(agent_cls, ai: AIConnection):
+    return agent_cls(api_key=ai.api_key, base_url=ai.base_url, model=ai.model)
+
+
+def _to_http_error(exc: Exception, action: str) -> HTTPException:
+    """Map agent exceptions onto meaningful HTTP responses."""
+    if isinstance(exc, AIConfigurationError):
+        return HTTPException(status_code=400, detail=str(exc))
+    if isinstance(exc, AIProviderError):
+        return HTTPException(status_code=502, detail=str(exc))
+    logger.error("Error in %s: %s", action, exc)
+    return HTTPException(status_code=500, detail=f"{action}失败：{exc}")
+
 
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the Smart Student Success Agent API. Access docs at /docs."}
 
-@app.post("/api/planner", response_model=StudyPlan)
-async def generate_study_plan(req: PlannerRequest, x_gemini_api_key: Optional[str] = Header(None)):
+
+@app.get("/api/ai-status")
+def ai_status():
+    """Report whether a server-side provider key exists (never the key itself)."""
+    return {
+        "configured": bool(settings.AI_API_KEY),
+        "baseUrl": settings.AI_BASE_URL,
+        "model": settings.AI_MODEL,
+    }
+
+
+@app.post("/api/ai-test")
+def test_ai_provider(ai: AIConnection = Depends(get_ai_connection)):
+    """Verify the configured provider with one minimal real request."""
     try:
-        api_key = get_api_key(x_gemini_api_key)
-        agent = PlannerAgent(api_key=api_key)
-        return agent.generate_plan(req)
+        agent = BaseAgent(
+            api_key=ai.api_key,
+            base_url=ai.base_url,
+            model=ai.model,
+            request_timeout=TEST_CONNECTION_TIMEOUT_SECONDS,
+        )
+        return agent.test_connection()
     except Exception as e:
-        logger.error(f"Error in planner endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate study plan: {str(e)}")
+        raise _to_http_error(e, "测试 AI 连接") from e
+
+
+@app.post("/api/planner", response_model=StudyPlan)
+async def generate_study_plan(req: PlannerRequest, ai: AIConnection = Depends(get_ai_connection)):
+    try:
+        return _build_agent(PlannerAgent, ai).generate_plan(req)
+    except Exception as e:
+        raise _to_http_error(e, "生成学习计划") from e
+
 
 @app.post("/api/exam-prep", response_model=ExamPrepResponse)
-async def generate_exam_prep(req: ExamPrepRequest, x_gemini_api_key: Optional[str] = Header(None)):
+async def generate_exam_prep(req: ExamPrepRequest, ai: AIConnection = Depends(get_ai_connection)):
     try:
-        api_key = get_api_key(x_gemini_api_key)
-        agent = ExamPrepAgent(api_key=api_key)
-        return agent.generate_prep_material(req)
+        return _build_agent(ExamPrepAgent, ai).generate_prep_material(req)
     except Exception as e:
-        logger.error(f"Error in exam prep endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate exam prep: {str(e)}")
+        raise _to_http_error(e, "生成备考资料") from e
+
 
 @app.post("/api/career", response_model=CareerGuidanceResponse)
-async def generate_career_guidance(req: CareerGuidanceRequest, x_gemini_api_key: Optional[str] = Header(None)):
+async def generate_career_guidance(req: CareerGuidanceRequest, ai: AIConnection = Depends(get_ai_connection)):
     try:
-        api_key = get_api_key(x_gemini_api_key)
-        agent = CareerAgent(api_key=api_key)
-        return agent.generate_career_guidance(req)
+        return _build_agent(CareerAgent, ai).generate_career_guidance(req)
     except Exception as e:
-        logger.error(f"Error in career endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate career guidance: {str(e)}")
+        raise _to_http_error(e, "生成职业指导") from e
+
 
 @app.post("/api/projects", response_model=ProjectResponse)
-async def generate_project_recommendations(req: ProjectRequest, x_gemini_api_key: Optional[str] = Header(None)):
+async def generate_project_recommendations(req: ProjectRequest, ai: AIConnection = Depends(get_ai_connection)):
     try:
-        api_key = get_api_key(x_gemini_api_key)
-        agent = ProjectAgent(api_key=api_key)
-        return agent.generate_projects(req)
+        return _build_agent(ProjectAgent, ai).generate_projects(req)
     except Exception as e:
-        logger.error(f"Error in projects endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate project recommendations: {str(e)}")
+        raise _to_http_error(e, "生成项目推荐") from e
+
 
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat_assistant(req: ChatRequest, x_gemini_api_key: Optional[str] = Header(None)):
+async def chat_assistant(req: ChatRequest, ai: AIConnection = Depends(get_ai_connection)):
     try:
-        api_key = get_api_key(x_gemini_api_key)
-        agent = BaseAgent(api_key=api_key)
-        
+        agent = _build_agent(BaseAgent, ai)
+
         system_instruction = (
             "You are the Academic and Career Mentor Chatbot for the Smart Student Success app. "
             "You help polytechnic students, university students, self-learners, and job seekers "
@@ -103,14 +167,14 @@ async def chat_assistant(req: ChatRequest, x_gemini_api_key: Optional[str] = Hea
             "Always keep the conversation focused on educational and career matters. "
             "If the user asks questions outside this context, politely guide them back."
         )
-        
+
         # Determine current context for better fallback responses
         subject = req.context.get("subject", "") if req.context else ""
         career = req.context.get("career", "") if req.context else ""
-        
+
         def fallback():
             msg = req.message.lower()
-            
+
             # Simple rules for interactive fallback replies
             if any(word in msg for word in ("hello", "hi", "你好", "您好")):
                 reply = (
@@ -152,17 +216,16 @@ async def chat_assistant(req: ChatRequest, x_gemini_api_key: Optional[str] = Hea
                     "可以前往侧边栏对应的智能代理获取更深入的分析。"
                 )
                 qs = ["给我一些考试复习建议", "哪些项目适合写在简历中？", "如何准备编程面试？"]
-                
+
             return reply, qs
-            
+
         reply, suggested_qs = agent.generate_chat_reply(
             history=req.history,
             user_message=req.message,
             system_instruction=system_instruction,
             fallback_func=fallback
         )
-        
+
         return ChatResponse(reply=reply, suggested_questions=suggested_qs)
     except Exception as e:
-        logger.error(f"Error in chat endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to process chat: {str(e)}")
+        raise _to_http_error(e, "处理对话") from e

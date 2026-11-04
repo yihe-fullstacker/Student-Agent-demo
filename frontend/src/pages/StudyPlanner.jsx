@@ -127,7 +127,7 @@ export default function StudyPlanner() {
       localStorage.setItem("planner_subject", subject);
     } catch (error) {
       console.error(error);
-      alert("无法连接智能代理，请检查密钥或稍后重试。");
+      alert(error.message || "无法连接智能代理，请检查密钥或稍后重试。");
     } finally {
       setLoading(false);
     }
@@ -435,7 +435,7 @@ export default function StudyPlanner() {
             {/* Info warning */}
             <div className="flex gap-2 items-start bg-blue-500/10 border border-blue-500/25 p-3 rounded-xl text-[10px] text-blue-300">
               <AlertCircle className="h-4.5 w-4.5 shrink-0 mt-0.5" />
-              <p>学习计划工具会使用 Gemini 人工智能代理合理安排每周任务。前期重点梳理薄弱环节中的定义与练习题，后期逐步转向限时模拟测试。</p>
+              <p>学习计划工具会使用 AI 智能代理合理安排每周任务。前期重点梳理薄弱环节中的定义与练习题，后期逐步转向限时模拟测试。</p>
             </div>
 
             <button

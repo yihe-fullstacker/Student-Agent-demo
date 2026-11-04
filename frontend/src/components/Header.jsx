@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Menu, Sparkles, AlertTriangle, LogOut } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import { PATHS } from "../routes/paths";
+import { loadAIConfig } from "../config/aiProviders";
+import { apiService } from "../services/api";
 
 export default function Header({ currentPage, toggleSidebar }) {
   const { logout } = useAuth();
@@ -12,16 +14,22 @@ export default function Header({ currentPage, toggleSidebar }) {
     navigate(PATHS.HOME, { replace: true });
   };
   const [hasApiKey, setHasApiKey] = useState(false);
+  const [serverConnected, setServerConnected] = useState(false);
+  const [providerName, setProviderName] = useState("");
   const [studentName, setStudentName] = useState("学习探索者");
 
   useEffect(() => {
-    // Check if key exists in local storage
+    // Check if the AI provider is configured in local storage
     const checkSettings = () => {
-      const key = localStorage.getItem("student_gemini_api_key");
+      const aiConfig = loadAIConfig();
       const name = localStorage.getItem("student_profile_name");
-      setHasApiKey(!!key);
+      setHasApiKey(!!aiConfig.apiKey);
+      setProviderName(aiConfig.providerName);
       if (name) setStudentName(name);
     };
+
+    // The backend may already hold a key in its .env file
+    apiService.getAIStatus().then((status) => setServerConnected(!!status.configured));
 
     checkSettings();
     
@@ -50,6 +58,9 @@ export default function Header({ currentPage, toggleSidebar }) {
     }
   };
 
+  const isConnected = hasApiKey || serverConnected;
+  const statusLabel = hasApiKey ? `${providerName || "AI"} 已连接` : "AI 已连接";
+
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-border-card bg-bg-card/40 px-6 backdrop-blur-md sticky top-0 z-30">
       {/* Mobile Toggle & Title */}
@@ -67,17 +78,17 @@ export default function Header({ currentPage, toggleSidebar }) {
 
       {/* Right controls */}
       <div className="flex items-center gap-4">
-        {/* Gemini API Key status */}
+        {/* AI provider status */}
         <div className="hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-xs md:flex bg-bg-dark border border-border-card">
-          {hasApiKey ? (
+          {isConnected ? (
             <>
               <Sparkles className="h-3.5 w-3.5 text-success animate-pulse" />
-              <span className="text-success font-medium">Gemini 已连接</span>
+              <span className="text-success font-medium">{statusLabel}</span>
             </>
           ) : (
             <>
               <AlertTriangle className="h-3.5 w-3.5 text-warning" />
-              <span className="text-warning font-medium">演示模式（模拟 API）</span>
+              <span className="text-warning font-medium">未配置 AI 密钥</span>
             </>
           )}
         </div>

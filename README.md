@@ -2,11 +2,11 @@
 
 面向学生、实践者和终身学习者的人工智能学习与职业发展助手。
 
-项目通过多个协作式智能代理，为用户提供学习计划、考试备考、职业规划和作品集项目推荐。系统采用前后端分离架构，AI 能力通过 DeepSeek API 接入，并保留离线演示模式。
+项目通过多个协作式智能代理，为用户提供学习计划、考试备考、职业规划和作品集项目推荐。系统采用前后端分离架构，AI 能力通过国内大模型 API 接入（DeepSeek、通义千问、智谱 GLM、Kimi、硅基流动等 OpenAI 兼容接口），服务商、密钥与模型均可在应用内配置。
 
 [![React](https://img.shields.io/badge/React-Frontend-61DAFB)](#)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688)](#)
-[![DeepSeek](https://img.shields.io/badge/DeepSeek-API-4F6BED)](#)
+[![AI](https://img.shields.io/badge/AI-DeepSeek%20%7C%20Qwen%20%7C%20GLM-4F6BED)](#)
 [![Vercel](https://img.shields.io/badge/Deployment-Vercel-000000)](#)
 
 ## 界面预览
@@ -81,7 +81,7 @@ Smart Student Success Agent 将学习规划、备考、职业指导和项目实�
 - 在应用内提供持续可用的学习与职业咨询
 - 结合当前学习科目和职业目标给出建议
 - 支持推荐问题和连续对话
-- 在没有可用 AI 密钥时自动切换为本地演示回复
+- 未配置密钥时给出明确提示，而非伪造回复
 
 ## 技术栈
 
@@ -89,7 +89,7 @@ Smart Student Success Agent 将学习规划、备考、职业指导和项目实�
 | --- | --- |
 | 前端 | React、Vite、Tailwind CSS、Motion、Lucide Icons |
 | 后端 | FastAPI、Python、Pydantic |
-| AI 服务 | DeepSeek API |
+| AI 服务 | 国内大模型 API（DeepSeek / 通义千问 / 智谱 GLM / Kimi / 硅基流动，OpenAI 兼容） |
 | 数据校验 | Pydantic |
 | 测试 | Pytest |
 | 前端部署 | Vercel |
@@ -112,10 +112,10 @@ FastAPI 后端
         └── 聊天助手
         │
         ▼
-DeepSeek API
+国内大模型 API（OpenAI 兼容）
 ```
 
-前端负责页面交互、导航、表单和结果展示；后端负责请求校验、提示词组织、AI 调用和结构化响应处理。当 AI 服务不可用时，后端会返回内置演示数据，保证主要页面仍然可以展示和操作。
+前端负责页面交互、导航、表单和结果展示；后端负责请求校验、提示词组织、AI 调用和结构化响应处理。未配置密钥或调用失败时，后端返回明确的错误信息；仅当后端服务完全无法访问时，前端才使用本地演示数据维持界面展示。
 
 ## 项目结构
 
@@ -147,6 +147,8 @@ Smart-Student-Success-Agent/
 | --- | --- | --- |
 | GET | `/` | 后端运行状态 |
 | GET | `/docs` | Swagger 接口文档 |
+| GET | `/api/ai-status` | 查询后端是否已配置模型密钥 |
+| POST | `/api/ai-test` | 用一次极短请求测试模型连接 |
 | POST | `/api/planner` | 生成学习计划 |
 | POST | `/api/exam-prep` | 生成备考资料与测验 |
 | POST | `/api/career` | 生成职业能力分析与路线 |
@@ -159,7 +161,7 @@ Smart-Student-Success-Agent/
 
 - Python 3.10 及以上版本
 - Node.js 20.19+ 或 22.12+，并安装 npm
-- 可用的 DeepSeek API Key，可选；未配置时使用演示模式
+- 可用的国内大模型 API Key，可选；未配置时无法生成内容（可浏览界面）
 
 ### 1. 启动后端
 
@@ -182,19 +184,31 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-复制环境变量示例并填写 DeepSeek 配置：
+复制环境变量示例并填写模型配置：
 
 ```bash
 cp .env.example .env
 ```
 
 ```env
-DEEPSEEK_API_KEY=your_deepseek_api_key
-DEEPSEEK_BASE_URL=https://api.deepseek.com
-DEEPSEEK_MODEL=deepseek-chat
+AI_API_KEY=your_api_key_here
+AI_BASE_URL=https://api.deepseek.com/v1
+AI_MODEL=deepseek-chat
 PORT=8000
 ENV=development
 ```
+
+其他国内服务商只需替换 `AI_BASE_URL` 与 `AI_MODEL`：
+
+| 服务商 | AI_BASE_URL | AI_MODEL |
+| --- | --- | --- |
+| DeepSeek | `https://api.deepseek.com/v1` | `deepseek-chat` |
+| 通义千问（阿里云百炼） | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-plus` |
+| 智谱 GLM | `https://open.bigmodel.cn/api/paas/v4` | `glm-4-flash` |
+| Kimi（月之暗面） | `https://api.moonshot.cn/v1` | `moonshot-v1-8k` |
+| 硅基流动 | `https://api.siliconflow.cn/v1` | `deepseek-ai/DeepSeek-V3` |
+
+旧版 `DEEPSEEK_API_KEY` / `DEEPSEEK_BASE_URL` / `DEEPSEEK_MODEL` 变量名仍然兼容。
 
 启动 FastAPI：
 
@@ -215,14 +229,20 @@ npm run dev
 
 打开 `http://localhost:5173` 即可访问系统。
 
-## 演示模式
+## 密钥配置与回退策略
 
-DeepSeek API Key 不是启动项目的强制条件。
+API Key 不是启动项目的强制条件，但只有配置密钥后才能得到真实的模型生成结果。
 
-- 配置有效密钥：使用 DeepSeek API 生成个性化内容
-- 未配置密钥：后端使用内置演示数据
-- AI 接口调用失败：自动切换为演示数据，避免页面无法使用
-- 后端不可访问：前端使用本地模拟数据继续展示核心流程
+- 配置有效密钥：调用所选国内大模型 API 生成个性化内容
+- 未配置密钥：后端返回 400，前端提示前往设置页配置
+- AI 接口调用失败：后端返回 502，并附带服务商返回的错误信息
+- 后端不可访问：前端使用本地演示数据继续展示界面（仅用于预览）
+- 需要旧版演示回退：设置 `ALLOW_DEMO_FALLBACK=true`，调用失败时返回内置演示数据
+
+密钥有两种配置方式：
+
+1. 应用内「设置」页面（适合个人使用）：选择服务商并填写密钥、接口地址和模型，保存在浏览器 localStorage，通过 `X-AI-Api-Key` / `X-AI-Base-Url` / `X-AI-Model` 请求头传给后端
+2. 后端 `.env` 文件（适合部署环境）：设置 `AI_API_KEY`、`AI_BASE_URL`、`AI_MODEL`
 
 ## 测试
 
@@ -241,7 +261,9 @@ pytest -q
 - 职业指导生成
 - 项目推荐生成
 - 聊天助手
-- 无 API Key 时的演示数据回退
+- 未配置密钥时的明确报错
+- 请求头中的厂商配置透传
+- 结构化 JSON 解析与校验失败重试
 
 ## 部署
 
@@ -264,9 +286,9 @@ uvicorn app.main:app --host 0.0.0.0 --port $PORT
 5. 配置环境变量：
 
 ```env
-DEEPSEEK_API_KEY=your_deepseek_api_key
-DEEPSEEK_BASE_URL=https://api.deepseek.com
-DEEPSEEK_MODEL=deepseek-chat
+AI_API_KEY=your_api_key_here
+AI_BASE_URL=https://api.deepseek.com/v1
+AI_MODEL=deepseek-chat
 ENV=production
 ```
 
@@ -289,7 +311,7 @@ dist
 ## 安全说明
 
 - 不要在代码仓库中提交真实 API Key
-- 生产环境优先通过后端环境变量保存 DeepSeek 密钥
+- 生产环境优先通过后端环境变量保存大模型密钥
 - `.env`、缓存、日志和本地虚拟环境已加入 `.gitignore`
 - 浏览器端保存的个人资料仅用于演示和本地状态恢复
 - 部署到公网前应限制后端 CORS 来源并增加请求频率限制
@@ -300,10 +322,10 @@ dist
 
 - 前后端分离架构
 - 多智能体任务拆分
-- DeepSeek API 接入
+- 国内大模型 API 接入（OpenAI 兼容多厂商）
 - 结构化 AI 输出
 - 前端路由与状态管理
-- 离线演示降级
+- 明确的错误提示与可选演示降级
 - 自动化接口测试
 
 ## 许可证

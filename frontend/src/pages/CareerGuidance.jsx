@@ -71,7 +71,7 @@ export default function CareerGuidance() {
       localStorage.setItem("career_target", career);
     } catch (err) {
       console.error(err);
-      alert("生成职业路径失败，请检查设置。");
+      alert(err.message || "生成职业路径失败，请检查设置。");
     } finally {
       setLoading(false);
     }

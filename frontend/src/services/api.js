@@ -1,44 +1,54 @@
 // API Client service for communicating with FastAPI Backend
 // with local mock failover in case the backend server is offline.
 
+import { loadAIConfig } from "../config/aiProviders";
+
 const DEFAULT_API_URL = "http://localhost:8000";
 const API_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
+const MOCK_FALLBACK_DELAY_MS = 800;
 
-// Helper to get headers with dynamic Gemini API Key from localStorage
+// Helper to get headers with the domestic LLM provider configuration
 const getHeaders = () => {
   const headers = {
     "Content-Type": "application/json",
   };
-  const key = localStorage.getItem("student_gemini_api_key");
-  if (key) {
-    headers["X-Gemini-API-Key"] = key;
-  }
+  const { apiKey, baseUrl, model } = loadAIConfig();
+  if (apiKey) headers["X-AI-Api-Key"] = apiKey;
+  if (baseUrl) headers["X-AI-Base-Url"] = baseUrl;
+  if (model) headers["X-AI-Model"] = model;
   return headers;
 };
 
-// Generic post request with automatic mock fallback on failure
+// Generic post request. Mock data is only used when the backend is unreachable;
+// a rejected request from the backend surfaces its real error message.
 async function postRequest(endpoint, payload, mockFallback) {
+  let response;
   try {
     console.log(`Sending request to backend: ${API_URL}${endpoint}`);
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    response = await fetch(`${API_URL}${endpoint}`, {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(payload),
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Server error: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.warn(`Backend connection failed for ${endpoint}. Using frontend client mock fallback. Details:`, error.message);
-    
+  } catch (networkError) {
+    console.warn(
+      `Backend connection failed for ${endpoint}. Using frontend client mock fallback. Details:`,
+      networkError.message
+    );
     // Simulate loading delay for a realistic AI feel
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((resolve) => setTimeout(resolve, MOCK_FALLBACK_DELAY_MS));
     return mockFallback(payload);
   }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const detail = errorData.detail;
+    const message =
+      typeof detail === "string" ? detail : `请求失败（HTTP ${response.status}）`;
+    throw new Error(message);
+  }
+
+  return await response.json();
 }
 
 export const apiService = {
@@ -306,7 +316,46 @@ export const apiService = {
     });
   },
 
-  // 5. Conversational Academic Chat Assistant
+  // 5. Server-side provider status (never returns the key itself)
+  getAIStatus: async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/ai-status`);
+      if (!response.ok) return { configured: false };
+      return await response.json();
+    } catch (networkError) {
+      console.warn("Unable to read backend AI status:", networkError.message);
+      return { configured: false };
+    }
+  },
+
+  // 6. Validate a provider configuration with one minimal real request.
+  // Values come from the Settings form so an unsaved key can be tested.
+  testAIConnection: async ({ apiKey, baseUrl, model }) => {
+    const headers = { "Content-Type": "application/json" };
+    if (apiKey) headers["X-AI-Api-Key"] = apiKey;
+    if (baseUrl) headers["X-AI-Base-Url"] = baseUrl;
+    if (model) headers["X-AI-Model"] = model;
+
+    let response;
+    try {
+      response = await fetch(`${API_URL}/api/ai-test`, {
+        method: "POST",
+        headers,
+      });
+    } catch (networkError) {
+      throw new Error(`无法连接后端服务：${networkError.message}`, { cause: networkError });
+    }
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(
+        typeof data.detail === "string" ? data.detail : `测试失败（HTTP ${response.status}）`
+      );
+    }
+    return data;
+  },
+
+  // 7. Conversational Academic Chat Assistant
   sendChatMessage: async (payload) => {
     return postRequest("/api/chat", payload, (req) => {
       const msg = req.message.toLowerCase();

@@ -45,7 +45,7 @@ export default function ExamPrep() {
       setPrepData(res);
     } catch (e) {
       console.error(e);
-      alert("生成备考资料失败，请重试。");
+      alert(e.message || "生成备考资料失败，请重试。");
     } finally {
       setLoading(false);
     }

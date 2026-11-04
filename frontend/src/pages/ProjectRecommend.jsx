@@ -75,7 +75,7 @@ export default function ProjectRecommend() {
 
     } catch (err) {
       console.error(err);
-      alert("生成项目推荐失败，请检查设置。");
+      alert(err.message || "生成项目推荐失败，请检查设置。");
     } finally {
       setLoading(false);
     }

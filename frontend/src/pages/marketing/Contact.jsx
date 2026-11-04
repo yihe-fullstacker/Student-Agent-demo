@@ -4,7 +4,7 @@ import PageHeader from "../../components/marketing/PageHeader";
 
 const FAQ = [
   { q: "平台需要付费吗？", a: "当前为演示版本，可使用任意邮箱和密码登录体验。" },
-  { q: "没有 Gemini API Key 能用吗？", a: "可以，未配置时平台以 Demo Mode（模拟数据）运行。" },
+  { q: "没有大模型 API Key 能用吗？", a: "可以浏览全部界面；生成类功能需要在设置页填写国内大模型 API 密钥（如 DeepSeek）后才能返回真实结果。" },
   { q: "我的数据存在哪里？", a: "演示版的登录状态与设置仅保存在浏览器本地存储中。" },
 ];
 
