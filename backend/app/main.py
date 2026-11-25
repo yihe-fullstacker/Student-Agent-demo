@@ -1,23 +1,57 @@
-from dataclasses import dataclass
-from typing import Optional
-
-from fastapi import Depends, FastAPI, Header, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+import json
 import logging
+import time
 
-from app.models import (
-    PlannerRequest, StudyPlan,
-    ExamPrepRequest, ExamPrepResponse,
-    CareerGuidanceRequest, CareerGuidanceResponse,
-    ProjectRequest, ProjectResponse,
-    ChatRequest, ChatResponse
-)
-from app.agents.planner import PlannerAgent
-from app.agents.exam_prep import ExamPrepAgent
+from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.agents.assistant import AssistantAgent
+from app.agents.base_agent import AIConfigurationError, AIProviderError, BaseAgent
 from app.agents.career import CareerAgent
+from app.agents.exam_prep import ExamPrepAgent
+from app.agents.planner import PlannerAgent
 from app.agents.project import ProjectAgent
-from app.agents.base_agent import BaseAgent, AIConfigurationError, AIProviderError
-from app.config import settings
+from app.ai_deps import AIConnection, get_ai_connection
+from app.auth.dependencies import get_current_user
+from app.config import DEFAULT_JWT_SECRET_KEY, settings
+from app.db.database import check_db_health, get_db, init_db
+from app.db.models import (
+    AgentExecution,
+    AgentMemory,
+    ChatMessageRecord,
+    ExamGoal,
+    User,
+    UserProfile,
+)
+from app.middleware import RateLimitMiddleware, RequestLoggingMiddleware
+from app.models import (
+    CareerGuidanceRequest,
+    CareerGuidanceResponse,
+    ChatRequest,
+    ChatResponse,
+    ExamPrepRequest,
+    ExamPrepResponse,
+    PlannerRequest,
+    ProjectRequest,
+    ProjectResponse,
+    StudyPlan,
+)
+from app.routers import (
+    auth_router,
+    exam_router,
+    plan_router,
+    profile_router,
+    record_router,
+    replan_router,
+    school_router,
+    task_router,
+)
+from app.services.scheduler import scheduler
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -25,55 +59,54 @@ logger = logging.getLogger(__name__)
 
 TEST_CONNECTION_TIMEOUT_SECONDS = 20
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    init_db()
+    if settings.ENV == "production" and settings.JWT_SECRET_KEY == DEFAULT_JWT_SECRET_KEY:
+        logger.warning("JWT_SECRET_KEY is using the default development value in production!")
+    if settings.ENABLE_SCHEDULER:
+        scheduler.start()
+    try:
+        yield
+    finally:
+        await scheduler.stop()
+
+
 app = FastAPI(
     title="Smart Student Success Agent API",
     description="Backend API for the AI-powered student academic and career success dashboard.",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
-# Configure CORS so our React frontend can access it
+# Register logging & rate limiting inside CORSMiddleware (last added = outermost in Starlette)
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(RateLimitMiddleware)
+
+# Configure CORS using explicit origin whitelist from environment settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify Vercel domains
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "X-AI-Api-Key",
+        "X-AI-Base-Url",
+        "X-AI-Model",
+    ],
 )
 
-
-@dataclass(frozen=True)
-class AIConnection:
-    """Provider settings for one request (headers override .env defaults)."""
-
-    api_key: str
-    base_url: str
-    model: str
-
-
-def get_ai_connection(
-    x_ai_api_key: Optional[str] = Header(None),
-    x_ai_base_url: Optional[str] = Header(None),
-    x_ai_model: Optional[str] = Header(None),
-) -> AIConnection:
-    """
-    Resolve the domestic LLM provider configuration.
-
-    The browser sends the values configured on the Settings page through
-    X-AI-Api-Key / X-AI-Base-Url / X-AI-Model; anything missing falls back to .env.
-    """
-    base_url = (x_ai_base_url or settings.AI_BASE_URL or "").strip().rstrip("/")
-    if not base_url.startswith(("http://", "https://")):
-        raise HTTPException(
-            status_code=400,
-            detail=f"AI 接口地址无效：{base_url or '空'}，必须以 http:// 或 https:// 开头。",
-        )
-
-    api_key = (x_ai_api_key or settings.AI_API_KEY or "").strip()
-    model = (x_ai_model or settings.AI_MODEL or "").strip()
-    if not model:
-        raise HTTPException(status_code=400, detail="AI 模型名称不能为空。")
-
-    return AIConnection(api_key=api_key, base_url=base_url, model=model)
+app.include_router(auth_router)
+app.include_router(profile_router)
+app.include_router(plan_router)
+app.include_router(replan_router)
+app.include_router(task_router)
+app.include_router(record_router)
+app.include_router(exam_router)
+app.include_router(school_router)
 
 
 def _build_agent(agent_cls, ai: AIConnection):
@@ -95,6 +128,56 @@ def read_root():
     return {"message": "Welcome to the Smart Student Success Agent API. Access docs at /docs."}
 
 
+@app.get("/api/health")
+def health_check():
+    """Verify service liveliness and database connectivity."""
+    ok, _detail = check_db_health()
+    if not ok:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "degraded",
+                "database": "disconnected",
+                "detail": "数据服务暂时不可用",
+            },
+        )
+    return {
+        "status": "ok",
+        "database": "connected",
+        "env": settings.ENV,
+    }
+
+
+@app.get("/api/system/metrics")
+def get_system_metrics(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Aggregate LLM execution counts, fallback rate, and average latency for monitoring."""
+    rows = db.scalars(
+        select(AgentExecution).where(AgentExecution.user_id == current_user.id)
+    ).all()
+    total_calls = len(rows)
+    success_calls = sum(1 for r in rows if r.status == "SUCCESS")
+    fallback_calls = sum(1 for r in rows if r.status == "FALLBACK")
+    failed_calls = sum(1 for r in rows if r.status not in ("SUCCESS", "FALLBACK"))
+    latencies = [r.latency_ms for r in rows if r.latency_ms is not None]
+    avg_latency_ms = round(sum(latencies) / len(latencies), 1) if latencies else 0.0
+
+    by_type: dict[str, int] = {}
+    for r in rows:
+        by_type[r.execution_type] = by_type.get(r.execution_type, 0) + 1
+
+    return {
+        "total_calls": total_calls,
+        "success_calls": success_calls,
+        "fallback_calls": fallback_calls,
+        "failed_calls": failed_calls,
+        "avg_latency_ms": avg_latency_ms,
+        "by_type": by_type,
+    }
+
+
 @app.get("/api/ai-status")
 def ai_status():
     """Report whether a server-side provider key exists (never the key itself)."""
@@ -106,7 +189,10 @@ def ai_status():
 
 
 @app.post("/api/ai-test")
-def test_ai_provider(ai: AIConnection = Depends(get_ai_connection)):
+def test_ai_provider(
+    ai: AIConnection = Depends(get_ai_connection),
+    _current_user: User = Depends(get_current_user),
+):
     """Verify the configured provider with one minimal real request."""
     try:
         agent = BaseAgent(
@@ -121,7 +207,11 @@ def test_ai_provider(ai: AIConnection = Depends(get_ai_connection)):
 
 
 @app.post("/api/planner", response_model=StudyPlan)
-async def generate_study_plan(req: PlannerRequest, ai: AIConnection = Depends(get_ai_connection)):
+async def generate_study_plan(
+    req: PlannerRequest,
+    ai: AIConnection = Depends(get_ai_connection),
+    _current_user: User = Depends(get_current_user),
+):
     try:
         return _build_agent(PlannerAgent, ai).generate_plan(req)
     except Exception as e:
@@ -129,7 +219,11 @@ async def generate_study_plan(req: PlannerRequest, ai: AIConnection = Depends(ge
 
 
 @app.post("/api/exam-prep", response_model=ExamPrepResponse)
-async def generate_exam_prep(req: ExamPrepRequest, ai: AIConnection = Depends(get_ai_connection)):
+async def generate_exam_prep(
+    req: ExamPrepRequest,
+    ai: AIConnection = Depends(get_ai_connection),
+    _current_user: User = Depends(get_current_user),
+):
     try:
         return _build_agent(ExamPrepAgent, ai).generate_prep_material(req)
     except Exception as e:
@@ -137,7 +231,11 @@ async def generate_exam_prep(req: ExamPrepRequest, ai: AIConnection = Depends(ge
 
 
 @app.post("/api/career", response_model=CareerGuidanceResponse)
-async def generate_career_guidance(req: CareerGuidanceRequest, ai: AIConnection = Depends(get_ai_connection)):
+async def generate_career_guidance(
+    req: CareerGuidanceRequest,
+    ai: AIConnection = Depends(get_ai_connection),
+    _current_user: User = Depends(get_current_user),
+):
     try:
         return _build_agent(CareerAgent, ai).generate_career_guidance(req)
     except Exception as e:
@@ -145,7 +243,11 @@ async def generate_career_guidance(req: CareerGuidanceRequest, ai: AIConnection 
 
 
 @app.post("/api/projects", response_model=ProjectResponse)
-async def generate_project_recommendations(req: ProjectRequest, ai: AIConnection = Depends(get_ai_connection)):
+async def generate_project_recommendations(
+    req: ProjectRequest,
+    ai: AIConnection = Depends(get_ai_connection),
+    _current_user: User = Depends(get_current_user),
+):
     try:
         return _build_agent(ProjectAgent, ai).generate_projects(req)
     except Exception as e:
@@ -153,79 +255,128 @@ async def generate_project_recommendations(req: ProjectRequest, ai: AIConnection
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat_assistant(req: ChatRequest, ai: AIConnection = Depends(get_ai_connection)):
+async def chat_assistant(
+    req: ChatRequest,
+    ai: AIConnection = Depends(get_ai_connection),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     try:
-        agent = _build_agent(BaseAgent, ai)
+        agent = _build_agent(AssistantAgent, ai)
+        session_id = (req.session_id or "default").strip() or "default"
 
-        system_instruction = (
-            "You are the Academic and Career Mentor Chatbot for the Smart Student Success app. "
-            "You help polytechnic students, university students, self-learners, and job seekers "
-            "with academic planning, exam strategies, skill development, and portfolio projects. "
-            "Be encouraging, highly professional, structured, and clear. "
-            "Keep your responses relatively brief (150-250 words) and format key terms in bold. "
-            "Always reply in Simplified Chinese. Keep product names, agent names, and technical terms in English when appropriate. "
-            "Always keep the conversation focused on educational and career matters. "
-            "If the user asks questions outside this context, politely guide them back."
+        profile = db.scalar(select(UserProfile).where(UserProfile.user_id == current_user.id))
+        goal = db.scalar(
+            select(ExamGoal)
+            .where(ExamGoal.user_id == current_user.id, ExamGoal.status == "ACTIVE")
+            .order_by(ExamGoal.id.desc())
         )
+        profile_summary = ""
+        if goal is not None:
+            profile_summary = f"{goal.exam_year}考研 {goal.school} {goal.major}"
+            if profile:
+                profile_summary += f"（水平：{profile.learning_level}，每日{profile.daily_minutes}分钟）"
 
-        # Determine current context for better fallback responses
-        subject = req.context.get("subject", "") if req.context else ""
-        career = req.context.get("career", "") if req.context else ""
+        memories = [
+            m.content
+            for m in db.scalars(
+                select(AgentMemory)
+                .where(AgentMemory.user_id == current_user.id)
+                .order_by(AgentMemory.importance.desc(), AgentMemory.id.desc())
+                .limit(3)
+            ).all()
+        ]
 
-        def fallback():
-            msg = req.message.lower()
-
-            # Simple rules for interactive fallback replies
-            if any(word in msg for word in ("hello", "hi", "你好", "您好")):
-                reply = (
-                    "你好！我是你的 **AI Academic & Career Success Assistant**。我可以帮助你：\n\n"
-                    "1. 制定个性化的每周 **Study Plans**。\n"
-                    "2. 生成学习指南、选择题练习和 **Exam Prep** 复习清单。\n"
-                    "3. 提供 **Career Roadmaps** 并分析技能差距。\n"
-                    "4. 推荐可写入简历的 **Portfolio Projects**，并生成 GitHub README。\n\n"
-                    "你今天想学习什么，或者你的理想职业是什么？"
-                )
-                qs = ["如何制定学习计划？", "我可以做哪些项目？", "请解释机器学习。"]
-            elif any(word in msg for word in ("plan", "study", "schedule", "计划", "学习", "安排")):
-                reply = (
-                    "如需生成专属学习计划，请进入 **Study Planner** 页面。"
-                    "填写科目、考试日期和每天可安排的学习时长后，我会为你生成逐日学习清单。"
-                    "你也可以继续询问 **Pomodoro technique** 或 **Spaced Repetition** 等学习方法。"
-                )
-                qs = ["介绍一下 Spaced Repetition", "如何学习数据库系统？", "有哪些好的学习习惯？"]
-            elif any(word in msg for word in ("career", "job", "intern", "职业", "工作", "实习")):
-                reply = (
-                    "职业规划可以从明确目标开始。请进入 **Career Guidance** 页面，"
-                    "填写目标岗位（例如 *Web Developer* 或 *AI Engineer*）、当前技能和兴趣方向。"
-                    "我会为你生成阶段式成长路线，并分析待补齐的 **skills gaps**。\n\n"
-                    "你希望进入哪个行业？"
-                )
-                qs = ["如何成为 AI Engineer？", "软件工程需要哪些技能？", "推荐一些 Web 开发课程。"]
-            elif any(word in msg for word in ("project", "readme", "github", "项目", "作品集")):
-                reply = (
-                    "实践项目是巩固知识并提升就业竞争力的有效方式。**Project Recommendations** 页面会"
-                    "根据你的技术栈推荐从入门到进阶的项目方案，并生成可直接使用的 **GitHub README.md** 模板。\n\n"
-                    "你偏好使用哪些技术（例如 React、Python、FastAPI）？"
-                )
-                qs = ["推荐一个 Python 项目", "给我一个 React 作品集项目", "GitHub README 应该包含什么？"]
-            else:
-                reply = (
-                    f"关于你的问题 **{req.message[:30]}...**，建议先拆解目标，再保持稳定、有结构的练习节奏。"
-                    "可以尝试模块化整理知识，或定期复习核心概念。"
-                    "如果你正在学习 " + (f"**{subject}**" if subject else "具体课程") + "，或目标是进入 " + (f"**{career}**" if career else "软件工程领域") + "，"
-                    "可以前往侧边栏对应的智能代理获取更深入的分析。"
-                )
-                qs = ["给我一些考试复习建议", "哪些项目适合写在简历中？", "如何准备编程面试？"]
-
-            return reply, qs
-
-        reply, suggested_qs = agent.generate_chat_reply(
-            history=req.history,
+        started_at = datetime.now(timezone.utc)
+        t0 = time.monotonic()
+        reply, suggested_qs, sources, source_mode = agent.answer_question(
             user_message=req.message,
-            system_instruction=system_instruction,
-            fallback_func=fallback
+            history=req.history,
+            context=req.context,
+            profile_summary=profile_summary,
+            memories=memories,
         )
+        latency_ms = int((time.monotonic() - t0) * 1000)
 
-        return ChatResponse(reply=reply, suggested_questions=suggested_qs)
+        db.add(
+            ChatMessageRecord(
+                user_id=current_user.id,
+                session_id=session_id,
+                role="user",
+                content=req.message,
+                sources_json=None,
+                generated_by="user",
+            )
+        )
+        db.add(
+            ChatMessageRecord(
+                user_id=current_user.id,
+                session_id=session_id,
+                role="model",
+                content=reply,
+                sources_json=json.dumps(sources, ensure_ascii=False),
+                generated_by=source_mode,
+            )
+        )
+        db.add(
+            AgentExecution(
+                user_id=current_user.id,
+                execution_type="CHAT",
+                input_summary=req.message[:200],
+                output_summary=reply[:200],
+                status="SUCCESS" if source_mode == "llm" else "FALLBACK",
+                trigger_source="USER_REQUEST",
+                latency_ms=latency_ms,
+                started_at=started_at,
+                finished_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+        return ChatResponse(
+            reply=reply,
+            suggested_questions=suggested_qs,
+            sources=sources,
+            source=source_mode,
+            session_id=session_id,
+        )
     except Exception as e:
         raise _to_http_error(e, "处理对话") from e
+
+
+@app.get("/api/chat/history")
+def get_chat_history(
+    session_id: str = Query("default"),
+    limit: int = Query(40, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return persisted chat messages for a user session."""
+    rows = db.scalars(
+        select(ChatMessageRecord)
+        .where(
+            ChatMessageRecord.user_id == current_user.id,
+            ChatMessageRecord.session_id == session_id,
+        )
+        .order_by(ChatMessageRecord.id.desc())
+        .limit(limit)
+    ).all()
+    rows.reverse()
+
+    messages = []
+    for row in rows:
+        try:
+            sources = json.loads(row.sources_json) if row.sources_json else []
+        except ValueError:
+            sources = []
+        messages.append(
+            {
+                "id": row.id,
+                "role": row.role,
+                "content": row.content,
+                "sources": sources,
+                "source": row.generated_by,
+                "created_at": row.created_at.isoformat(),
+            }
+        )
+    return {"session_id": session_id, "messages": messages}

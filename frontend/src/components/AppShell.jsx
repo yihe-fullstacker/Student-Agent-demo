@@ -8,8 +8,12 @@ import ChatBot from "./ChatBot";
 // Pages
 import Home from "../pages/Home";
 import Dashboard from "../pages/Dashboard";
+import Profile from "../pages/Profile";
 import StudyPlanner from "../pages/StudyPlanner";
+import TodayTasks from "../pages/TodayTasks";
+import StudyRecords from "../pages/StudyRecords";
 import ExamPrep from "../pages/ExamPrep";
+import SchoolAnalysis from "../pages/SchoolAnalysis";
 import CareerGuidance from "../pages/CareerGuidance";
 import ProjectRecommend from "../pages/ProjectRecommend";
 import Settings from "../pages/Settings";
@@ -34,10 +38,18 @@ export default function AppShell() {
         return <Home setCurrentPage={setCurrentPage} />;
       case "dashboard":
         return <Dashboard setCurrentPage={setCurrentPage} />;
+      case "profile":
+        return <Profile setCurrentPage={setCurrentPage} />;
       case "planner":
-        return <StudyPlanner />;
+        return <StudyPlanner setCurrentPage={setCurrentPage} />;
+      case "today":
+        return <TodayTasks setCurrentPage={setCurrentPage} />;
+      case "records":
+        return <StudyRecords setCurrentPage={setCurrentPage} />;
       case "examprep":
-        return <ExamPrep />;
+        return <ExamPrep setCurrentPage={setCurrentPage} />;
+      case "school":
+        return <SchoolAnalysis />;
       case "career":
         return <CareerGuidance />;
       case "projects":

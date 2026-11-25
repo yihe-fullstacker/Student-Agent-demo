@@ -108,9 +108,8 @@ const AgentStage = memo(function AgentStage() {
 
 export default function AuthModal({ open, onClose, initialMode = "login", redirectTo = PATHS.APP }) {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const [mode, setMode] = useState(initialMode);
-  const [method, setMethod] = useState("password"); // password | sms | oauth
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -125,7 +124,6 @@ export default function AuthModal({ open, onClose, initialMode = "login", redire
     if (open) {
       setMode(initialMode);
       setError("");
-      setMethod("password");
     }
   }
 
@@ -151,18 +149,17 @@ export default function AuthModal({ open, onClose, initialMode = "login", redire
     };
   }, [open, onClose]);
 
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (method !== "password") {
-      setError(method === "sms" ? "短信登录为演示占位，请使用密码登录。" : "第三方授权为演示占位，请使用密码登录。");
+    const trimmedAccount = email.trim();
+    if (!trimmedAccount || !password.trim()) {
+      setError(mode === "login" ? "请填写邮箱/用户名和密码。" : "请填写邮箱和密码。");
       return;
     }
-
-    if (!email.trim() || !password.trim()) {
-      setError("请填写邮箱和密码。");
+    if (mode === "register" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedAccount)) {
+      setError("请输入有效的邮箱地址。");
       return;
     }
     if (mode === "register" && password.trim().length < 6) {
@@ -172,9 +169,19 @@ export default function AuthModal({ open, onClose, initialMode = "login", redire
 
     setSubmitting(true);
     try {
-      login({ email, name, remember });
+      if (mode === "login") {
+        await login({ account: trimmedAccount, password, remember });
+      } else {
+        await register({
+          email: trimmedAccount,
+          password,
+          nickname: name.trim() || undefined,
+        });
+      }
       onClose?.();
       navigate(redirectTo || PATHS.APP, { replace: true });
+    } catch (err) {
+      setError(err?.message || "操作失败，请稍后重试。");
     } finally {
       setSubmitting(false);
     }
@@ -203,7 +210,7 @@ export default function AuthModal({ open, onClose, initialMode = "login", redire
             role="dialog"
             aria-modal="true"
             aria-labelledby="auth-modal-title"
-            className="relative z-10 grid w-full max-w-[880px] overflow-hidden rounded-[32px] border border-slate-200/70 bg-[#f9fafb] shadow-[0_40px_100px_-20px_rgba(10,21,45,0.35)] md:h-[min(680px,calc(100vh-4rem))] md:grid-cols-2"
+            className="relative z-10 grid w-full max-w-[880px] overflow-hidden rounded-[32px] border border-slate-200/70 bg-[#f9fafb] shadow-[0_40px_100px_-20px_rgba(10,21,45,0.35)] md:h-[min(640px,calc(100vh-4rem))] md:grid-cols-2"
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.98 }}
@@ -230,7 +237,7 @@ export default function AuthModal({ open, onClose, initialMode = "login", redire
                 {mode === "login" ? "登录后继续学习之旅" : "注册开启智能学习平台"}
               </h2>
               <p className="mt-1 text-[12px] leading-relaxed text-slate-500">
-                海军蓝玻璃质感 · 与 Student Success Agent 同一视觉语言
+                账号与学习进度将安全同步至后端数据库
               </p>
 
               <div className="mt-5 flex rounded-full bg-slate-200/70 p-1">
@@ -244,7 +251,6 @@ export default function AuthModal({ open, onClose, initialMode = "login", redire
                     onClick={() => {
                       setMode(tab.id);
                       setError("");
-                      setMethod("password");
                     }}
                     className={`flex-1 rounded-full px-4 py-2 text-[13px] font-semibold transition ${
                       mode === tab.id
@@ -257,104 +263,67 @@ export default function AuthModal({ open, onClose, initialMode = "login", redire
                 ))}
               </div>
 
-              <div className="mt-4 flex rounded-full bg-slate-100 p-1">
-                {[
-                  { id: "password", label: "密码" },
-                  { id: "sms", label: "短信" },
-                  { id: "oauth", label: "授权" },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => {
-                      setMethod(tab.id);
-                      setError("");
-                    }}
-                    className={`flex-1 rounded-full px-3 py-1.5 text-[12px] font-semibold transition ${
-                      method === tab.id
-                        ? "bg-white text-[#0a152d] shadow-sm"
-                        : "text-slate-500 hover:text-[#0a152d]"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+              <form onSubmit={handleSubmit} className="mt-6 flex flex-1 flex-col">
+                {mode === "register" && (
+                  <label className="mb-3 block">
+                    <span className="mb-1.5 block text-[12px] font-medium text-slate-500">昵称（可选）</span>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="考研追梦人"
+                      className="w-full rounded-2xl border border-transparent bg-slate-100/90 px-4 py-3 text-[14px] text-[#0a152d] outline-none transition focus:border-[#0a152d]/20 focus:bg-white focus:ring-2 focus:ring-[#0a152d]/10"
+                    />
+                  </label>
+                )}
 
-              <form onSubmit={handleSubmit} className="mt-5 flex flex-1 flex-col">
-                {method === "password" ? (
-                  <>
-                    {mode === "register" && (
-                      <label className="mb-3 block">
-                        <span className="mb-1.5 block text-[12px] font-medium text-slate-500">昵称</span>
-                        <input
-                          type="text"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          placeholder="学习探索者"
-                          className="w-full rounded-2xl border border-transparent bg-slate-100/90 px-4 py-3 text-[14px] text-[#0a152d] outline-none transition focus:border-[#0a152d]/20 focus:bg-white focus:ring-2 focus:ring-[#0a152d]/10"
-                        />
-                      </label>
-                    )}
+                <label className="mb-3 block">
+                  <span className="mb-1.5 block text-[12px] font-medium text-slate-500">
+                    {mode === "login" ? "邮箱 / 用户名" : "邮箱"}
+                  </span>
+                  <input
+                    type={mode === "register" ? "email" : "text"}
+                    autoComplete={mode === "register" ? "email" : "username"}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={mode === "login" ? "student@university.edu 或用户名" : "student@university.edu"}
+                    className="w-full rounded-2xl border border-transparent bg-slate-100/90 px-4 py-3 text-[14px] text-[#0a152d] outline-none transition focus:border-[#0a152d]/20 focus:bg-white focus:ring-2 focus:ring-[#0a152d]/10"
+                  />
+                </label>
 
-                    <label className="mb-3 block">
-                      <span className="mb-1.5 block text-[12px] font-medium text-slate-500">工作邮箱</span>
+                <label className="mb-3 block">
+                  <span className="mb-1.5 block text-[12px] font-medium text-slate-500">密码</span>
+                  <div className="flex gap-2">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      autoComplete={mode === "login" ? "current-password" : "new-password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder={mode === "register" ? "至少 6 位密码" : "••••••••"}
+                      className="w-full rounded-2xl border border-transparent bg-slate-100/90 px-4 py-3 text-[14px] text-[#0a152d] outline-none transition focus:border-[#0a152d]/20 focus:bg-white focus:ring-2 focus:ring-[#0a152d]/10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="shrink-0 rounded-2xl border border-slate-200 bg-white px-3 text-slate-500 shadow-sm transition hover:text-[#0a152d]"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </label>
+
+                {mode === "login" && (
+                  <div className="mb-4 flex items-center justify-between text-[12px]">
+                    <label className="flex cursor-pointer items-center gap-2 text-slate-600">
                       <input
-                        type="email"
-                        autoComplete="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="student@university.edu / 用户名"
-                        className="w-full rounded-2xl border border-transparent bg-slate-100/90 px-4 py-3 text-[14px] text-[#0a152d] outline-none transition focus:border-[#0a152d]/20 focus:bg-white focus:ring-2 focus:ring-[#0a152d]/10"
+                        type="checkbox"
+                        checked={remember}
+                        onChange={(e) => setRemember(e.target.checked)}
+                        className="h-4 w-4 rounded border-slate-300 accent-[#0a152d]"
                       />
+                      记住我（7 天免登录）
                     </label>
-
-                    <label className="mb-3 block">
-                      <span className="mb-1.5 block text-[12px] font-medium text-slate-500">密码</span>
-                      <div className="flex gap-2">
-                        <input
-                          type={showPassword ? "text" : "password"}
-                          autoComplete={mode === "login" ? "current-password" : "new-password"}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="••••••••"
-                          className="w-full rounded-2xl border border-transparent bg-slate-100/90 px-4 py-3 text-[14px] text-[#0a152d] outline-none transition focus:border-[#0a152d]/20 focus:bg-white focus:ring-2 focus:ring-[#0a152d]/10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword((v) => !v)}
-                          className="shrink-0 rounded-2xl border border-slate-200 bg-white px-3 text-slate-500 shadow-sm transition hover:text-[#0a152d]"
-                          aria-label={showPassword ? "Hide password" : "Show password"}
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </label>
-
-                    <div className="mb-4 flex items-center justify-between text-[12px]">
-                      <label className="flex cursor-pointer items-center gap-2 text-slate-600">
-                        <input
-                          type="checkbox"
-                          checked={remember}
-                          onChange={(e) => setRemember(e.target.checked)}
-                          className="h-4 w-4 rounded border-slate-300 accent-[#0a152d]"
-                        />
-                        记住我
-                      </label>
-                      <button
-                        type="button"
-                        className="font-medium text-sky-700 hover:underline"
-                        onClick={() => alert("演示环境：请使用任意邮箱和密码登录。")}
-                      >
-                        忘记密码?
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="mb-4 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-[13px] text-slate-500">
-                    {method === "sms"
-                      ? "短信验证码登录即将开放，当前为 UI 占位。"
-                      : "Google / GitHub 授权入口即将开放，当前为 UI 占位。"}
                   </div>
                 )}
 
@@ -369,30 +338,14 @@ export default function AuthModal({ open, onClose, initialMode = "login", redire
                   disabled={submitting}
                   className="mt-auto w-full rounded-full bg-[#0a152d] px-6 py-3.5 text-[14px] font-semibold text-white shadow-[0_12px_30px_rgba(10,21,45,0.28)] transition hover:bg-[#1a2a4d] disabled:opacity-60"
                 >
-                  {submitting ? "进入中…" : "进入平台 →"}
+                  {submitting
+                    ? mode === "login"
+                      ? "登录中…"
+                      : "注册中…"
+                    : mode === "login"
+                      ? "登录并进入平台 →"
+                      : "注册并进入平台 →"}
                 </button>
-
-                <div className="mt-5 flex items-center gap-3 text-[11px] text-slate-400">
-                  <div className="h-px flex-1 bg-slate-200" />
-                  授权入口
-                  <div className="h-px flex-1 bg-slate-200" />
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setMethod("oauth")}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-2 text-[12px] font-semibold text-slate-600 shadow-sm hover:border-slate-300"
-                  >
-                    Google
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMethod("oauth")}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-2 text-[12px] font-semibold text-slate-600 shadow-sm hover:border-slate-300"
-                  >
-                    GitHub
-                  </button>
-                </div>
               </form>
             </div>
           </motion.div>

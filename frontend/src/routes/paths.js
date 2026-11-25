@@ -12,8 +12,12 @@ export const PATHS = Object.freeze({
 export const APP_SECTIONS = Object.freeze({
   home: "",
   dashboard: "dashboard",
+  profile: "profile",
   planner: "planner",
+  today: "today",
+  records: "records",
   examprep: "exam-prep",
+  school: "school",
   career: "career",
   projects: "projects",
   settings: "settings",

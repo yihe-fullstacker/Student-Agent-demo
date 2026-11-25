@@ -1,23 +1,101 @@
 // API Client service for communicating with FastAPI Backend
 // with local mock failover in case the backend server is offline.
 
+import { clearAuth, getAuthToken } from "../auth/authStorage";
 import { loadAIConfig } from "../config/aiProviders";
 
 const DEFAULT_API_URL = "http://localhost:8000";
 const API_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
 const MOCK_FALLBACK_DELAY_MS = 800;
+const REQUEST_TIMEOUT_MS = 30000;
 
-// Helper to get headers with the domestic LLM provider configuration
-const getHeaders = () => {
+async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err) {
+    if (err?.name === "AbortError") {
+      const timeoutErr = new Error("请求超时（30秒），请检查网络或模型服务后重试", {
+        cause: err,
+      });
+      timeoutErr.isTimeout = true;
+      throw timeoutErr;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Helper to get headers with auth token and domestic LLM provider configuration
+const getHeaders = (includeAIHeaders = true) => {
   const headers = {
     "Content-Type": "application/json",
   };
-  const { apiKey, baseUrl, model } = loadAIConfig();
-  if (apiKey) headers["X-AI-Api-Key"] = apiKey;
-  if (baseUrl) headers["X-AI-Base-Url"] = baseUrl;
-  if (model) headers["X-AI-Model"] = model;
+  const token = getAuthToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  if (includeAIHeaders) {
+    const { apiKey, baseUrl, model } = loadAIConfig();
+    if (apiKey) headers["X-AI-Api-Key"] = apiKey;
+    if (baseUrl) headers["X-AI-Base-Url"] = baseUrl;
+    if (model) headers["X-AI-Model"] = model;
+  }
   return headers;
 };
+
+function notifyUnauthorized(endpoint) {
+  if (endpoint === "/api/auth/login" || endpoint === "/api/auth/register") {
+    return;
+  }
+  clearAuth();
+  window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+}
+
+async function parseErrorResponse(response, fallbackText) {
+  const errorData = await response.json().catch(() => ({}));
+  const detail = errorData.detail;
+  let message;
+  if (typeof detail === "string") {
+    message = detail;
+  } else if (Array.isArray(detail) && detail.length > 0) {
+    message = detail[0]?.msg || fallbackText;
+  } else {
+    message = `${fallbackText}（HTTP ${response.status}）`;
+  }
+  const err = new Error(message);
+  err.status = response.status;
+  return err;
+}
+
+// Strict JSON request for auth and stateful endpoints (never falls back to mock data)
+async function requestStrictJson(endpoint, { method = "GET", payload, includeAIHeaders = false } = {}) {
+  let response;
+  try {
+    response = await fetchWithTimeout(`${API_URL}${endpoint}`, {
+      method,
+      headers: getHeaders(includeAIHeaders),
+      ...(payload !== undefined ? { body: JSON.stringify(payload) } : {}),
+    });
+  } catch (networkError) {
+    if (networkError?.isTimeout) {
+      throw networkError;
+    }
+    throw new Error("无法连接后端服务，请确认 FastAPI 后端已启动", { cause: networkError });
+  }
+
+  if (response.status === 401) {
+    notifyUnauthorized(endpoint);
+  }
+
+  if (!response.ok) {
+    throw await parseErrorResponse(response, "请求失败");
+  }
+
+  return await response.json();
+}
 
 // Generic post request. Mock data is only used when the backend is unreachable;
 // a rejected request from the backend surfaces its real error message.
@@ -25,12 +103,15 @@ async function postRequest(endpoint, payload, mockFallback) {
   let response;
   try {
     console.log(`Sending request to backend: ${API_URL}${endpoint}`);
-    response = await fetch(`${API_URL}${endpoint}`, {
+    response = await fetchWithTimeout(`${API_URL}${endpoint}`, {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(payload),
     });
   } catch (networkError) {
+    if (networkError?.isTimeout) {
+      throw networkError;
+    }
     console.warn(
       `Backend connection failed for ${endpoint}. Using frontend client mock fallback. Details:`,
       networkError.message
@@ -40,18 +121,170 @@ async function postRequest(endpoint, payload, mockFallback) {
     return mockFallback(payload);
   }
 
+  if (response.status === 401) {
+    notifyUnauthorized(endpoint);
+  }
+
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const detail = errorData.detail;
-    const message =
-      typeof detail === "string" ? detail : `请求失败（HTTP ${response.status}）`;
-    throw new Error(message);
+    throw await parseErrorResponse(response, "请求失败");
   }
 
   return await response.json();
 }
 
 export const apiService = {
+  // 0. Authentication & Health
+  register: async ({ email, password, nickname, username }) => {
+    return requestStrictJson("/api/auth/register", {
+      method: "POST",
+      payload: { email, password, nickname, username },
+    });
+  },
+
+  login: async ({ account, password, remember = true }) => {
+    return requestStrictJson("/api/auth/login", {
+      method: "POST",
+      payload: { account, password, remember },
+    });
+  },
+
+  getCurrentUser: async () => {
+    return requestStrictJson("/api/auth/me", { method: "GET" });
+  },
+
+  logout: async () => {
+    return requestStrictJson("/api/auth/logout", { method: "POST" });
+  },
+
+  getHealth: async () => {
+    return requestStrictJson("/api/health", { method: "GET" });
+  },
+
+  getSystemMetrics: async () => {
+    return requestStrictJson("/api/system/metrics", { method: "GET" });
+  },
+
+  // 0.5 Kaoyan Profile, Plan, Tasks & Records
+  getSubjects: async () => {
+    return requestStrictJson("/api/subjects", { method: "GET" });
+  },
+
+  getProfile: async () => {
+    return requestStrictJson("/api/profile", { method: "GET" });
+  },
+
+  updateProfile: async (payload) => {
+    return requestStrictJson("/api/profile", { method: "PUT", payload });
+  },
+
+  generateKaoyanPlan: async () => {
+    return requestStrictJson("/api/plan/generate", {
+      method: "POST",
+      includeAIHeaders: true,
+    });
+  },
+
+  getCurrentPlan: async () => {
+    return requestStrictJson("/api/plan/current", { method: "GET" });
+  },
+
+  getPlanVersions: async () => {
+    return requestStrictJson("/api/plan/versions", { method: "GET" });
+  },
+
+  getTodayTasks: async (dateStr) => {
+    const query = dateStr ? `?date=${encodeURIComponent(dateStr)}` : "";
+    return requestStrictJson(`/api/task/today${query}`, { method: "GET" });
+  },
+
+  startTask: async (taskId) => {
+    return requestStrictJson(`/api/task/${taskId}/start`, { method: "POST" });
+  },
+
+  completeTask: async (taskId, payload = {}) => {
+    return requestStrictJson(`/api/task/${taskId}/complete`, {
+      method: "POST",
+      payload,
+    });
+  },
+
+  getRecordStats: async () => {
+    return requestStrictJson("/api/record/stats", { method: "GET" });
+  },
+
+  getRecordList: async (limit = 50) => {
+    return requestStrictJson(`/api/record/list?limit=${limit}`, { method: "GET" });
+  },
+
+  submitRecordFeedback: async (payload) => {
+    return requestStrictJson("/api/record/feedback", {
+      method: "POST",
+      payload,
+    });
+  },
+
+  // 0.6 Exam, Wrong Book, Replan, School Analysis & Chat History
+  generateExamQuiz: async (payload) => {
+    return requestStrictJson("/api/exam/generate", {
+      method: "POST",
+      payload,
+      includeAIHeaders: true,
+    });
+  },
+
+  submitExamAnswers: async (payload) => {
+    return requestStrictJson("/api/exam/submit", {
+      method: "POST",
+      payload,
+    });
+  },
+
+  getWrongList: async (subjectId = null, includeMastered = false) => {
+    const params = new URLSearchParams();
+    if (subjectId) params.set("subject_id", String(subjectId));
+    if (includeMastered) params.set("include_mastered", "true");
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return requestStrictJson(`/api/wrong/list${qs}`, { method: "GET" });
+  },
+
+  retryWrongQuestion: async (wrongId, userAnswerIndex) => {
+    return requestStrictJson(`/api/wrong/${wrongId}/retry`, {
+      method: "POST",
+      payload: { user_answer_index: userAnswerIndex },
+    });
+  },
+
+  triggerReplan: async (reason = "") => {
+    return requestStrictJson("/api/replan", {
+      method: "POST",
+      payload: { reason },
+      includeAIHeaders: true,
+    });
+  },
+
+  comparePlanVersions: async (oldId = null, newId = null) => {
+    const params = new URLSearchParams();
+    if (oldId) params.set("old_id", String(oldId));
+    if (newId) params.set("new_id", String(newId));
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return requestStrictJson(`/api/plan/compare${qs}`, { method: "GET" });
+  },
+
+  getChatHistory: async (sessionId = "default") => {
+    return requestStrictJson(
+      `/api/chat/history?session_id=${encodeURIComponent(sessionId)}`,
+      { method: "GET" }
+    );
+  },
+
+  analyzeTargetSchool: async (payload) => {
+    return requestStrictJson("/api/school/analyze", {
+      method: "POST",
+      payload,
+      includeAIHeaders: true,
+    });
+  },
+
   // 1. Generate Study Plan
   generateStudyPlan: async (payload) => {
     return postRequest("/api/planner", payload, (req) => {
@@ -331,7 +564,7 @@ export const apiService = {
   // 6. Validate a provider configuration with one minimal real request.
   // Values come from the Settings form so an unsaved key can be tested.
   testAIConnection: async ({ apiKey, baseUrl, model }) => {
-    const headers = { "Content-Type": "application/json" };
+    const headers = getHeaders(false);
     if (apiKey) headers["X-AI-Api-Key"] = apiKey;
     if (baseUrl) headers["X-AI-Base-Url"] = baseUrl;
     if (model) headers["X-AI-Model"] = model;
@@ -344,6 +577,10 @@ export const apiService = {
       });
     } catch (networkError) {
       throw new Error(`无法连接后端服务：${networkError.message}`, { cause: networkError });
+    }
+
+    if (response.status === 401) {
+      notifyUnauthorized("/api/ai-test");
     }
 
     const data = await response.json().catch(() => ({}));

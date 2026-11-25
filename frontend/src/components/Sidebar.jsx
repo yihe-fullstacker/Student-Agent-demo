@@ -1,24 +1,31 @@
-import React from "react";
 import { 
   BookOpen, 
   LayoutDashboard, 
+  UserCheck,
   Calendar, 
+  CheckSquare,
+  ClipboardList,
   GraduationCap, 
-  Briefcase, 
-  FolderGit2, 
+  School,
   Settings as SettingsIcon,
   X,
   Sparkles
 } from "lucide-react";
+import { useAuth } from "../auth/AuthContext";
 
 export default function Sidebar({ currentPage, setCurrentPage, isOpen, toggleSidebar }) {
+  const { user } = useAuth();
+  const displayName = user?.nickname || user?.username || "学习探索者";
+  const displaySub = user?.email || "活跃学习者";
   const menuItems = [
-    { id: "home", label: "概览", icon: BookOpen },
-    { id: "dashboard", label: "仪表盘", icon: LayoutDashboard },
-    { id: "planner", label: "学习计划", icon: Calendar },
-    { id: "examprep", label: "考试备考", icon: GraduationCap },
-    { id: "career", label: "职业指导", icon: Briefcase },
-    { id: "projects", label: "项目推荐", icon: FolderGit2 },
+    { id: "home", label: "考研首页", icon: BookOpen },
+    { id: "dashboard", label: "考研仪表盘", icon: LayoutDashboard },
+    { id: "profile", label: "考生档案", icon: UserCheck },
+    { id: "planner", label: "AI考研规划", icon: Calendar },
+    { id: "today", label: "今日任务", icon: CheckSquare },
+    { id: "records", label: "学习记录", icon: ClipboardList },
+    { id: "examprep", label: "刷题与错题本", icon: GraduationCap },
+    { id: "school", label: "择校分析", icon: School },
     { id: "settings", label: "设置", icon: SettingsIcon },
   ];
 
@@ -86,11 +93,11 @@ export default function Sidebar({ currentPage, setCurrentPage, isOpen, toggleSid
         <div className="p-4 border-t border-border-card">
           <div className="flex items-center gap-3 rounded-xl bg-bg-dark/50 p-3 border border-border-card">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/20 text-secondary font-bold text-sm">
-              S
+              {displayName.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-text-primary">学习探索者</p>
-              <p className="truncate text-[10px] text-text-muted">活跃学习者</p>
+              <p className="truncate text-xs font-semibold text-text-primary">{displayName}</p>
+              <p className="truncate text-[10px] text-text-muted">{displaySub}</p>
             </div>
           </div>
         </div>

@@ -119,9 +119,13 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
-    history: List[ChatMessage]
+    history: List[ChatMessage] = Field(default_factory=list)
     context: Optional[dict] = None
+    session_id: str = "default"
 
 class ChatResponse(BaseModel):
     reply: str
     suggested_questions: List[str]
+    sources: List[dict] = Field(default_factory=list)
+    source: str = "llm"
+    session_id: str = "default"

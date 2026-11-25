@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
-REQUEST_TIMEOUT_SECONDS = 90
+REQUEST_TIMEOUT_SECONDS = 30
 MAX_STRUCTURED_ATTEMPTS = 2
 
 LANGUAGE_INSTRUCTION = (

@@ -1,206 +1,391 @@
-import React, { useState, useEffect } from "react";
-import { 
-  Calendar, 
-  Plus, 
-  Trash2, 
-  Sparkles, 
-  Loader2, 
-  CheckCircle2, 
-  Bookmark, 
+import { useEffect, useState } from "react";
+import {
+  AlertCircle,
+  ArrowRight,
   Award,
-  AlertCircle
+  Bookmark,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  GitCompare,
+  History,
+  Loader2,
+  RefreshCw,
+  Sparkles,
 } from "lucide-react";
 import { apiService } from "../services/api";
-import { translateGeneratedText } from "../utils/translateGeneratedText";
 
-const dayLabels = {
-  Monday: "周一",
-  Tuesday: "周二",
-  Wednesday: "周三",
-  Thursday: "周四",
-  Friday: "周五",
-  Saturday: "周六",
-  Sunday: "周日",
+const LOADING_MESSAGES = [
+  "正在读取考生档案与考试倒计时...",
+  "正在划分基础 / 强化 / 冲刺三阶段...",
+  "正在按科目与薄弱知识点拆解周计划...",
+  "正在生成每日可执行任务并持久化...",
+];
+
+const PRIORITY_LABEL = {
+  3: { text: "高", cls: "bg-accent/15 text-accent" },
+  2: { text: "中", cls: "bg-warning/15 text-warning" },
+  1: { text: "低", cls: "bg-slate-500/15 text-text-muted" },
 };
 
-const priorityLabels = {
-  High: "高",
-  Medium: "中",
-  Low: "低",
+const TASK_STATUS_LABEL = {
+  PENDING: "待完成",
+  IN_PROGRESS: "进行中",
+  COMPLETED: "已完成",
+  OVERDUE: "已逾期",
 };
 
-const displayDayName = (day) => dayLabels[day] || day;
-const displayPriority = (priority) => priorityLabels[priority] || priority;
-
-export default function StudyPlanner() {
-  // Form state
-  const [subject, setSubject] = useState("");
-  const [examDate, setExamDate] = useState("");
-  const [dailyHours, setDailyHours] = useState(2);
-  const [weakTopics, setWeakTopics] = useState([]);
-  const [topicInput, setTopicInput] = useState("");
-  const [level, setLevel] = useState("Intermediate");
-
-  // App state
-  const [loading, setLoading] = useState(false);
+export default function StudyPlanner({ setCurrentPage }) {
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [replanning, setReplanning] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
-  const [studyPlan, setStudyPlan] = useState(null);
-  const [activeWeek, setActiveWeek] = useState(1);
-  const [completedTasks, setCompletedTasks] = useState([]); // Array of strings: "week-day"
+  const [error, setError] = useState("");
+  const [replanReason, setReplanReason] = useState("");
+  const [replanNotice, setReplanNotice] = useState(null);
+  const [versionDiff, setVersionDiff] = useState(null);
 
-  const loadingMessages = [
-    "正在搭建学习日历...",
-    "正在整理主题学习指南...",
-    "正在分配重点与薄弱内容...",
-    "正在生成学习活动清单...",
-    "准备完成！"
-  ];
+  const [profile, setProfile] = useState(null);
+  const [plan, setPlan] = useState(null);
+  const [versions, setVersions] = useState([]);
+  const [activePhaseId, setActivePhaseId] = useState(null);
+  const [activeWeekNum, setActiveWeekNum] = useState(1);
 
-  // Load existing plan from local storage on mount
+  const applyPlanSelection = (targetPlan) => {
+    if (targetPlan?.phases?.length > 0) {
+      const firstPhase = targetPlan.phases[0];
+      setActivePhaseId(firstPhase.id);
+      setActiveWeekNum(firstPhase.weeks?.[0]?.week_number || 1);
+    } else if (targetPlan?.weeks?.length > 0) {
+      setActiveWeekNum(targetPlan.weeks[0].week_number);
+    }
+  };
+
   useEffect(() => {
-    const cachedPlan = localStorage.getItem("active_study_plan");
-    const cachedCompleted = localStorage.getItem("completed_study_tasks");
-    
-    if (cachedPlan) {
-      try {
-        const plan = JSON.parse(cachedPlan);
-        setStudyPlan(plan);
-        setSubject(plan.subject_name || "");
-      } catch (e) {}
-    }
-
-    if (cachedCompleted) {
-      try {
-        setCompletedTasks(JSON.parse(cachedCompleted));
-      } catch (e) {}
-    }
+    let active = true;
+    Promise.all([
+      apiService.getProfile(),
+      apiService.getCurrentPlan(),
+      apiService.getPlanVersions(),
+    ])
+      .then(async ([profRes, currentRes, versionsRes]) => {
+        if (!active) return;
+        setProfile(profRes);
+        setPlan(currentRes.plan || null);
+        const vList = versionsRes.versions || [];
+        setVersions(vList);
+        applyPlanSelection(currentRes.plan);
+        if (vList.length >= 2) {
+          try {
+            const diffRes = await apiService.comparePlanVersions();
+            if (active) setVersionDiff(diffRes);
+          } catch {
+            // ignore diff fetch error
+          }
+        }
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err.message || "加载考研计划失败");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
-  // Set up loading indicator timer loop
   useEffect(() => {
-    let timer;
-    if (loading) {
-      timer = setInterval(() => {
-        setLoadingStep((prev) => (prev < loadingMessages.length - 2 ? prev + 1 : prev));
-      }, 1500);
-    } else {
-      setLoadingStep(0);
-    }
+    if (!generating) return undefined;
+    const timer = setInterval(() => {
+      setLoadingStep((prev) =>
+        prev < LOADING_MESSAGES.length - 1 ? prev + 1 : prev
+      );
+    }, 1500);
     return () => clearInterval(timer);
-  }, [loading]);
+  }, [generating]);
 
-  const addWeakTopic = (e) => {
-    e.preventDefault();
-    if (topicInput.trim() && !weakTopics.includes(topicInput.trim())) {
-      setWeakTopics([...weakTopics, topicInput.trim()]);
-      setTopicInput("");
-    }
-  };
-
-  const removeWeakTopic = (topicToRemove) => {
-    setWeakTopics(weakTopics.filter((t) => t !== topicToRemove));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!subject || !examDate) return;
-
-    setLoading(true);
+  const handleGenerate = async () => {
+    setGenerating(true);
     setLoadingStep(0);
-
+    setError("");
+    setReplanNotice(null);
     try {
-      const res = await apiService.generateStudyPlan({
-        subject_name: subject,
-        exam_date: examDate,
-        weak_topics: weakTopics.length > 0 ? weakTopics : ["Fundamental concepts"],
-        daily_hours: parseFloat(dailyHours),
-        current_level: level
-      });
-
-      setStudyPlan(res);
-      setActiveWeek(1);
-      setCompletedTasks([]);
-      
-      // Cache values
-      localStorage.setItem("active_study_plan", JSON.stringify(res));
-      localStorage.setItem("completed_study_tasks", JSON.stringify([]));
-      localStorage.setItem("planner_subject", subject);
-    } catch (error) {
-      console.error(error);
-      alert(error.message || "无法连接智能代理，请检查密钥或稍后重试。");
+      const res = await apiService.generateKaoyanPlan();
+      setPlan(res.plan);
+      applyPlanSelection(res.plan);
+      const [profRes, versionsRes] = await Promise.all([
+        apiService.getProfile(),
+        apiService.getPlanVersions(),
+      ]);
+      setProfile(profRes);
+      const vList = versionsRes.versions || [];
+      setVersions(vList);
+      if (vList.length >= 2) {
+        const diffRes = await apiService.comparePlanVersions();
+        setVersionDiff(diffRes);
+      }
+    } catch (err) {
+      setError(err.message || "生成考研计划失败");
     } finally {
-      setLoading(false);
+      setGenerating(false);
     }
   };
 
-  // Toggle a study task status
-  const toggleTask = (weekNum, dayName) => {
-    const taskId = `${weekNum}-${dayName}`;
-    let newCompleted;
-    if (completedTasks.includes(taskId)) {
-      newCompleted = completedTasks.filter((id) => id !== taskId);
-    } else {
-      newCompleted = [...completedTasks, taskId];
+  const handleReplan = async () => {
+    setReplanning(true);
+    setError("");
+    try {
+      const res = await apiService.triggerReplan(replanReason.trim());
+      setPlan(res.plan);
+      applyPlanSelection(res.plan);
+      setReplanNotice(res);
+      setReplanReason("");
+      const [profRes, versionsRes, diffRes] = await Promise.all([
+        apiService.getProfile(),
+        apiService.getPlanVersions(),
+        apiService.comparePlanVersions(),
+      ]);
+      setProfile(profRes);
+      setVersions(versionsRes.versions || []);
+      setVersionDiff(diffRes);
+    } catch (err) {
+      setError(err.message || "动态调整计划失败");
+    } finally {
+      setReplanning(false);
     }
-    setCompletedTasks(newCompleted);
-    localStorage.setItem("completed_study_tasks", JSON.stringify(newCompleted));
   };
 
-  const deletePlan = () => {
-    if (window.confirm("确定要清除当前学习计划并重置进度吗？")) {
-      setStudyPlan(null);
-      setCompletedTasks([]);
-      localStorage.removeItem("active_study_plan");
-      localStorage.removeItem("completed_study_tasks");
-      localStorage.removeItem("planner_subject");
-    }
-  };
+  const isProfileReady =
+    profile &&
+    profile.school &&
+    profile.major &&
+    Array.isArray(profile.subjects) &&
+    profile.subjects.length > 0 &&
+    profile.daily_minutes > 0;
+
+  const activePhase = plan?.phases?.find((p) => p.id === activePhaseId) || plan?.phases?.[0];
+  const visibleWeeks = activePhase?.weeks?.length ? activePhase.weeks : plan?.weeks || [];
+  const activeWeek =
+    visibleWeeks.find((w) => w.week_number === activeWeekNum) || visibleWeeks[0];
+
+  if (loading) {
+    return (
+      <div className="glass-card rounded-2xl border border-border-card bg-bg-card p-12 flex flex-col items-center justify-center gap-3 min-h-[300px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-xs text-text-muted">正在加载考研规划与版本记录...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8 animate-fade-in pb-12">
-      {/* Introduction */}
-      <div>
-        <h1 className="text-xl font-bold text-text-primary">学习计划智能代理</h1>
-        <p className="text-xs text-text-secondary">根据你的薄弱环节和考试日期，生成并跟踪专属学习时间表。</p>
+    <div className="space-y-6 animate-fade-in pb-12">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-text-primary flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-primary" />
+            AI 考研分层规划与动态调整
+          </h1>
+          <p className="text-xs text-text-secondary mt-1">
+            支持初始分层生成、基于逾期与错题薄弱点的 AI 动态重排，以及新旧版本差异对比。
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCurrentPage("profile")}
+            className="rounded-xl border border-border-card bg-bg-card px-4 py-2 text-xs font-semibold text-text-secondary hover:bg-bg-card-hover cursor-pointer"
+          >
+            编辑考生档案
+          </button>
+          {isProfileReady && (
+            <button
+              type="button"
+              disabled={generating || replanning}
+              onClick={handleGenerate}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-primary/20 hover:bg-primary-hover disabled:opacity-60 cursor-pointer"
+            >
+              <Sparkles className="h-4 w-4" />
+              {plan ? "重新生成初始计划" : "立即生成 AI 考研计划"}
+            </button>
+          )}
+        </div>
       </div>
 
-      {loading ? (
-        /* Loading Screen */
-        <div className="glass-card rounded-2xl border border-border-card bg-bg-card p-12 text-center flex flex-col items-center justify-center space-y-6 min-h-[300px]">
+      {error && (
+        <div className="flex items-center gap-2 rounded-xl border border-accent/30 bg-accent/10 px-4 py-3 text-xs text-accent">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {plan && (
+        <div className="glass-card rounded-2xl border border-secondary/30 bg-secondary/5 p-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex-1 min-w-[220px] space-y-1">
+            <h3 className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+              <RefreshCw className="h-3.5 w-3.5 text-secondary" />
+              AI 动态调整计划（结合逾期任务、学习反馈与错题薄弱点重排）
+            </h3>
+            <input
+              type="text"
+              value={replanReason}
+              onChange={(e) => setReplanReason(e.target.value)}
+              placeholder="可选：说明调整诉求（如：数学高数滞后，希望未来两周增加微积分练习）"
+              className="input-field w-full"
+            />
+          </div>
+          <button
+            type="button"
+            disabled={replanning || generating}
+            onClick={handleReplan}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-secondary px-4 py-2.5 text-xs font-bold text-white hover:opacity-90 disabled:opacity-60 cursor-pointer"
+          >
+            {replanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {replanning ? "正在重排..." : "触发 AI 动态调整"}
+          </button>
+        </div>
+      )}
+
+      {replanNotice && (
+        <div className="rounded-2xl border border-success/30 bg-success/10 p-4 text-xs space-y-1.5">
+          <p className="font-bold text-success">
+            已发布新版本 v{replanNotice.diff_summary.new_version}（原版本 v{replanNotice.diff_summary.previous_version} 已归档）
+          </p>
+          <p className="text-text-primary">{replanNotice.strategy.summary}</p>
+          <p className="text-text-secondary">
+            重排待办 {replanNotice.diff_summary.rescheduled_count} 项 · 清理逾期 {replanNotice.diff_summary.overdue_cleared_count} 项 · 新增薄弱强化任务 {replanNotice.diff_summary.added_weak_tasks_count} 项
+          </p>
+        </div>
+      )}
+
+      {generating ? (
+        <div className="glass-card rounded-2xl border border-border-card bg-bg-card p-12 text-center flex flex-col items-center justify-center space-y-4 min-h-[300px]">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-text-primary">智能代理正在生成学习日历...</h3>
-            <p className="text-xs text-text-muted">{loadingMessages[loadingStep]}</p>
+            <h3 className="text-sm font-bold text-text-primary">PlanningAgent 正在构建分层考研计划...</h3>
+            <p className="text-xs text-text-muted">{LOADING_MESSAGES[loadingStep]}</p>
           </div>
         </div>
-      ) : studyPlan ? (
-        /* Active Study Plan Display */
+      ) : !isProfileReady ? (
+        <div className="glass-card rounded-2xl border border-border-card bg-bg-card p-10 text-center space-y-4 max-w-xl mx-auto">
+          <AlertCircle className="h-10 w-10 text-warning mx-auto" />
+          <h2 className="text-base font-bold text-text-primary">尚未完善考生画像</h2>
+          <p className="text-xs text-text-secondary leading-relaxed">
+            请先在「考生档案」中填写目标院校、专业、考试科目、考试日期及每日可学习时间，然后再一键生成个性化考研规划。
+          </p>
+          <button
+            type="button"
+            onClick={() => setCurrentPage("profile")}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-xs font-semibold text-white cursor-pointer"
+          >
+            前往填写考生档案
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      ) : !plan ? (
+        <div className="glass-card rounded-2xl border border-border-card bg-bg-card p-10 text-center space-y-4 max-w-xl mx-auto">
+          <Sparkles className="h-10 w-10 text-primary mx-auto" />
+          <h2 className="text-base font-bold text-text-primary">
+            已就绪：{profile.school} · {profile.major}
+          </h2>
+          <p className="text-xs text-text-secondary">
+            报考科目：{profile.subjects.join("、")} ｜ 每日 {profile.daily_minutes} 分钟 ｜ 水平：{profile.learning_level}
+          </p>
+          <button
+            type="button"
+            onClick={handleGenerate}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 cursor-pointer"
+          >
+            <Sparkles className="h-4 w-4" />
+            生成我的首份考研规划
+          </button>
+        </div>
+      ) : (
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Main schedule panels */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="glass-card rounded-2xl border p-6 bg-bg-card space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-border-card/30">
+            <div className="glass-card rounded-2xl border border-border-card bg-bg-card p-6 space-y-5">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border-card/30 pb-4">
                 <div>
-                  <span className="text-[10px] text-primary uppercase font-bold tracking-wider">当前计划</span>
-                  <h2 className="text-lg font-bold text-text-primary">{translateGeneratedText(studyPlan.subject_name)}</h2>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-md bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">
+                      版本 v{plan.version}
+                    </span>
+                    <span
+                      className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
+                        plan.source === "llm"
+                          ? "bg-success/15 text-success"
+                          : "bg-warning/15 text-warning"
+                      }`}
+                    >
+                      {plan.source === "llm" ? "AI 实时推理生成" : "基础规则模板降级"}
+                    </span>
+                  </div>
+                  <h2 className="mt-1.5 text-lg font-bold text-text-primary">{plan.title}</h2>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    周期：{plan.start_date} 至 {plan.end_date} · 科目：{plan.subjects.join("、")}
+                  </p>
                 </div>
-                <button 
-                  onClick={deletePlan} 
-                  className="text-xs bg-accent/10 border border-accent/20 hover:bg-accent/20 text-accent font-bold px-3 py-2 rounded-xl transition cursor-pointer"
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage("today")}
+                  className="inline-flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 cursor-pointer"
                 >
-                  清除计划
+                  去今日任务打卡
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>
 
-              {/* Week selectors tabs */}
-              <div className="flex gap-2 border-b border-border-card/20 pb-3 overflow-x-auto whitespace-nowrap scrollbar-none">
-                {studyPlan.weekly_schedule.map((week) => (
+              {plan.source === "fallback" && (
+                <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-2.5 text-[11px] text-warning">
+                  提示：{plan.fallback_reason || "当前使用规则模板生成计划（source=fallback），在设置页配置大模型密钥后可重新生成 AI 深度规划。"}
+                </div>
+              )}
+
+              {plan.phases?.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {plan.phases.map((phase) => {
+                    const isActive = activePhase?.id === phase.id;
+                    return (
+                      <button
+                        key={phase.id}
+                        type="button"
+                        onClick={() => {
+                          setActivePhaseId(phase.id);
+                          if (phase.weeks?.[0]) {
+                            setActiveWeekNum(phase.weeks[0].week_number);
+                          }
+                        }}
+                        className={`rounded-xl border px-3.5 py-2 text-xs font-bold transition cursor-pointer ${
+                          isActive
+                            ? "border-primary bg-primary text-white"
+                            : "border-border-card bg-bg-dark/40 text-text-secondary hover:bg-bg-card-hover"
+                        }`}
+                      >
+                        {phase.title}（{phase.weeks?.length || 0}周）
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {activePhase && (
+                <p className="text-xs text-text-secondary bg-bg-dark/30 border border-border-card/40 rounded-xl px-4 py-2.5">
+                  {activePhase.description}
+                </p>
+              )}
+
+              <div className="flex gap-2 overflow-x-auto pb-2 border-b border-border-card/20">
+                {visibleWeeks.map((week) => (
                   <button
-                    key={week.week_number}
-                    onClick={() => setActiveWeek(week.week_number)}
-                    className={`px-4 py-2 text-xs font-semibold rounded-xl transition-all duration-150 ${
-                      activeWeek === week.week_number
-                        ? "bg-primary text-white"
+                    key={week.id}
+                    type="button"
+                    onClick={() => setActiveWeekNum(week.week_number)}
+                    className={`shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                      activeWeek?.week_number === week.week_number
+                        ? "bg-secondary text-white"
                         : "text-text-secondary hover:bg-bg-card-hover"
                     }`}
                   >
@@ -209,242 +394,162 @@ export default function StudyPlanner() {
                 ))}
               </div>
 
-              {/* Active Week Goal */}
-              <div className="bg-bg-dark/40 border border-border-card rounded-xl p-4">
-                <h4 className="text-xs font-bold text-secondary flex items-center gap-1.5 mb-1">
-                  <Award className="h-4 w-4" />
-                  每周目标
-                </h4>
-                <p className="text-xs text-text-secondary">
-                  {translateGeneratedText(studyPlan.weekly_schedule.find(w => w.week_number === activeWeek)?.weekly_goal)}
-                </p>
-              </div>
+              {activeWeek && (
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-border-card bg-bg-dark/40 p-4">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <h4 className="text-xs font-bold text-secondary flex items-center gap-1.5">
+                        <Award className="h-4 w-4" />
+                        第 {activeWeek.week_number} 周目标
+                      </h4>
+                      <span className="text-[10px] text-text-muted">
+                        {activeWeek.start_date} ~ {activeWeek.end_date}
+                      </span>
+                    </div>
+                    <p className="text-xs text-text-secondary">{activeWeek.weekly_goal}</p>
+                  </div>
 
-              {/* Day lists */}
-              <div className="space-y-4">
-                {studyPlan.weekly_schedule
-                  .find((w) => w.week_number === activeWeek)
-                  ?.days.map((day, dIdx) => {
-                    const taskId = `${activeWeek}-${day.day_name}`;
-                    const isCompleted = completedTasks.includes(taskId);
-                    return (
-                      <div 
-                        key={dIdx} 
-                        className={`border rounded-xl p-4 transition-all duration-200 bg-bg-dark/20 ${
-                          isCompleted ? "border-success/30 bg-success/5" : "border-border-card/60"
-                        }`}
-                      >
-                        <div className="flex justify-between items-start gap-4 mb-2">
-                          <div>
-                            <span className="text-[10px] text-text-muted font-bold">{displayDayName(day.day_name)}</span>
-                            <h4 className="text-sm font-bold text-text-primary">{translateGeneratedText(day.topic)}</h4>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${
-                              day.priority === "High" ? "bg-accent/10 text-accent" : "bg-warning/10 text-warning"
-                            }`}>
-                              {displayPriority(day.priority)}
-                            </span>
-                            <span className="text-[10px] text-text-muted">{day.duration_hours} 小时</span>
-                          </div>
-                        </div>
-
-                        {/* Subtopics */}
-                        <div className="flex flex-wrap gap-1.5 mb-3">
-                          {day.subtopics.map((st, sIdx) => (
-                            <span key={sIdx} className="text-[9px] bg-bg-card-hover text-text-secondary border border-border-card/40 px-2 py-0.5 rounded">
-                              {translateGeneratedText(st)}
-                            </span>
-                          ))}
-                        </div>
-
-                        {/* Checklist */}
-                        <div className="space-y-2 pl-1 border-t border-border-card/20 pt-3">
-                          {day.activities.map((act, aIdx) => (
-                            <div key={aIdx} className="flex items-center gap-2 text-xs text-text-secondary">
-                              <span className="h-1 w-1 rounded-full bg-primary" />
-                              <span>{translateGeneratedText(act)}</span>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Mark complete checkbox */}
-                        <button
-                          onClick={() => toggleTask(activeWeek, day.day_name)}
-                          className={`mt-4 w-full flex items-center justify-center gap-2 border text-xs font-semibold py-2 rounded-lg transition cursor-pointer ${
-                            isCompleted
-                              ? "bg-success/15 border-success/35 text-success hover:bg-success/20"
-                              : "border-border-card hover:bg-bg-card-hover text-text-secondary"
+                  <div className="space-y-3">
+                    {activeWeek.tasks.map((task) => {
+                      const pMeta = PRIORITY_LABEL[task.priority] || PRIORITY_LABEL[2];
+                      return (
+                        <div
+                          key={task.id}
+                          className={`rounded-xl border p-4 space-y-2 ${
+                            task.status === "COMPLETED"
+                              ? "border-success/30 bg-success/5"
+                              : "border-border-card/60 bg-bg-dark/20"
                           }`}
                         >
-                          <CheckCircle2 className="h-4 w-4" />
-                          {isCompleted ? "已完成！" : "将当天任务标记为完成"}
-                        </button>
-                      </div>
-                    );
-                  })}
-              </div>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                                {task.subject_name}
+                              </span>
+                              <span className="text-[10px] text-text-muted">{task.scheduled_date}</span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${pMeta.cls}`}>
+                                优先级：{pMeta.text}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] text-text-muted">
+                              <span className="inline-flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {task.estimated_minutes} 分钟
+                              </span>
+                              <span className="font-semibold text-text-secondary">
+                                {TASK_STATUS_LABEL[task.status] || task.status}
+                              </span>
+                            </div>
+                          </div>
+                          <h5 className="text-xs font-bold text-text-primary">{task.title}</h5>
+                          <p className="text-xs text-text-secondary">{task.description}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Sidebar Stats and checklists */}
           <div className="space-y-6">
-            {/* Timeline Milestones */}
-            <div className="glass-card rounded-2xl border p-6 bg-bg-card space-y-4">
+            {versionDiff && (
+              <div className="glass-card rounded-2xl border border-border-card bg-bg-card p-6 space-y-3">
+                <h3 className="text-sm font-bold text-text-primary flex items-center gap-1.5 pb-2 border-b border-border-card/30">
+                  <GitCompare className="h-4 w-4 text-primary" />
+                  版本差异对比（v{versionDiff.old_version.version} → v{versionDiff.new_version.version}）
+                </h3>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="rounded-xl bg-bg-dark/40 p-2.5">
+                    <p className="text-[10px] text-text-muted">总任务数变化</p>
+                    <p className="font-bold text-text-primary">
+                      {versionDiff.old_version.total_tasks} → {versionDiff.new_version.total_tasks}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-bg-dark/40 p-2.5">
+                    <p className="text-[10px] text-text-muted">高优先级任务</p>
+                    <p className="font-bold text-accent">
+                      {versionDiff.old_version.high_priority_tasks} → {versionDiff.new_version.high_priority_tasks}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-text-secondary">
+                  新增薄弱强化任务：{versionDiff.delta.weak_boost_added} 项
+                </p>
+                {versionDiff.new_version.replan_summary && (
+                  <p className="text-[11px] text-text-muted leading-relaxed">
+                    调整摘要：{versionDiff.new_version.replan_summary}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="glass-card rounded-2xl border border-border-card bg-bg-card p-6 space-y-4">
               <h3 className="text-sm font-bold text-text-primary flex items-center gap-1.5 pb-2 border-b border-border-card/30">
-                <Bookmark className="h-4.5 w-4.5 text-primary" />
-                主要里程碑
+                <Bookmark className="h-4 w-4 text-primary" />
+                阶段里程碑
               </h3>
-              <div className="space-y-4 relative pl-3 border-l border-border-card/60 ml-2">
-                {studyPlan.milestones.map((ms, idx) => (
+              <div className="space-y-4 pl-3 border-l border-border-card/60 ml-2">
+                {plan.milestones?.map((ms, idx) => (
                   <div key={idx} className="relative">
                     <div className="absolute -left-[17px] top-1 h-2 w-2 rounded-full bg-primary" />
-                    <div>
-                      <span className="text-[9px] text-primary font-bold">{translateGeneratedText(ms.target_date)}</span>
-                      <h4 className="text-xs font-bold text-text-primary">{translateGeneratedText(ms.title)}</h4>
-                      <p className="text-[10px] text-text-secondary leading-normal">{translateGeneratedText(ms.description)}</p>
-                    </div>
+                    <span className="text-[10px] font-bold text-primary">{ms.target_date}</span>
+                    <h4 className="text-xs font-bold text-text-primary">{ms.title}</h4>
+                    <p className="text-[11px] text-text-secondary">{ms.description}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* General exam readiness checklist */}
-            <div className="glass-card rounded-2xl border p-6 bg-bg-card space-y-4">
+            <div className="glass-card rounded-2xl border border-border-card bg-bg-card p-6 space-y-3">
               <h3 className="text-sm font-bold text-text-primary flex items-center gap-1.5 pb-2 border-b border-border-card/30">
-                <CheckCircle2 className="h-4.5 w-4.5 text-success" />
-                备考清单
+                <CheckCircle2 className="h-4 w-4 text-success" />
+                备考关键清单
               </h3>
-              <ul className="space-y-3">
-                {studyPlan.exam_readiness_checklist.map((item, idx) => (
-                  <li key={idx} className="flex gap-2 items-start text-xs text-text-secondary">
-                    <CheckCircle2 className="h-4 w-4 text-text-muted shrink-0 mt-0.5" />
-                    <span>{translateGeneratedText(item)}</span>
+              <ul className="space-y-2.5">
+                {plan.checklist?.map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-xs text-text-secondary">
+                    <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                    <span>{item}</span>
                   </li>
                 ))}
               </ul>
             </div>
-          </div>
-        </div>
-      ) : (
-        /* Form creation view */
-        <div className="glass-card rounded-2xl border p-6 bg-bg-card max-w-xl mx-auto">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <h3 className="text-base font-bold text-text-primary flex items-center gap-2 border-b border-border-card/30 pb-3">
-              <Sparkles className="h-5 w-5 text-primary animate-pulse" />
-              配置学习目标
-            </h3>
 
-            {/* Subject name */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-secondary">科目名称</label>
-              <input
-                type="text"
-                required
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="例如：Data Structures、Applied Physics、Software Engineering"
-                className="input-field"
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              {/* Exam Date */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-text-secondary">考试日期</label>
-                <input
-                  type="date"
-                  required
-                  value={examDate}
-                  onChange={(e) => setExamDate(e.target.value)}
-                  className="input-field [color-scheme:dark]"
-                />
-              </div>
-
-              {/* Study Hours */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-text-secondary">每日学习时长（小时）</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="12"
-                  value={dailyHours}
-                  onChange={(e) => setDailyHours(e.target.value)}
-                  className="input-field"
-                />
-              </div>
-            </div>
-
-            {/* Current Proficiency level */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-secondary">当前学习水平</label>
-              <select
-                value={level}
-                onChange={(e) => setLevel(e.target.value)}
-                className="input-field bg-bg-dark"
-              >
-                <option value="Beginner">初级（基础薄弱）</option>
-                <option value="Intermediate">中级（理解概念，需要加强练习）</option>
-                <option value="Advanced">高级（知识扎实，正在冲刺高分）</option>
-              </select>
-            </div>
-
-            {/* Weak Topics */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-secondary">薄弱主题（重点攻克）</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={topicInput}
-                  onChange={(e) => setTopicInput(e.target.value)}
-                  placeholder="例如：Tree Traversal、Normalization、Git Merge"
-                  className="input-field flex-1"
-                />
-                <button
-                  type="button"
-                  onClick={addWeakTopic}
-                  className="bg-primary/20 text-primary border border-primary/30 hover:bg-primary/35 transition px-3 rounded-lg flex items-center justify-center font-bold text-xs"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
-
-              {/* Topic tags list */}
-              {weakTopics.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2 bg-bg-dark/40 border border-border-card/50 p-2.5 rounded-xl">
-                  {weakTopics.map((topic, index) => (
-                    <span 
-                      key={index} 
-                      className="inline-flex items-center gap-1 bg-primary/10 border border-primary/25 text-primary text-xs font-semibold px-2.5 py-1 rounded-lg"
+            {versions.length > 0 && (
+              <div className="glass-card rounded-2xl border border-border-card bg-bg-card p-6 space-y-3">
+                <h3 className="text-sm font-bold text-text-primary flex items-center gap-1.5 pb-2 border-b border-border-card/30">
+                  <History className="h-4 w-4 text-secondary" />
+                  历史版本记录
+                </h3>
+                <div className="space-y-2.5">
+                  {versions.map((v) => (
+                    <div
+                      key={v.id}
+                      className="rounded-xl border border-border-card/60 bg-bg-dark/30 p-3 text-xs space-y-1"
                     >
-                      {topic}
-                      <button 
-                        type="button" 
-                        onClick={() => removeWeakTopic(topic)}
-                        className="text-text-secondary hover:text-accent font-bold"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </span>
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-text-primary">v{v.version}</span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                            v.status === "ACTIVE"
+                              ? "bg-success/15 text-success"
+                              : "bg-slate-500/15 text-text-muted"
+                          }`}
+                        >
+                          {v.status}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-text-secondary truncate">{v.title}</p>
+                      <p className="text-[10px] text-text-muted">
+                        已完成 {v.completed_count} / {v.task_count} 项 · {v.source}
+                      </p>
+                    </div>
                   ))}
                 </div>
-              )}
-            </div>
-
-            {/* Info warning */}
-            <div className="flex gap-2 items-start bg-blue-500/10 border border-blue-500/25 p-3 rounded-xl text-[10px] text-blue-300">
-              <AlertCircle className="h-4.5 w-4.5 shrink-0 mt-0.5" />
-              <p>学习计划工具会使用 AI 智能代理合理安排每周任务。前期重点梳理薄弱环节中的定义与练习题，后期逐步转向限时模拟测试。</p>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-primary hover:bg-primary-hover font-semibold text-sm text-white py-3 rounded-xl shadow-lg shadow-primary/20 transition cursor-pointer"
-            >
-              生成学习计划
-            </button>
-          </form>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -7,10 +7,10 @@ import { loadAIConfig } from "../config/aiProviders";
 import { apiService } from "../services/api";
 
 export default function Header({ currentPage, toggleSidebar }) {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate(PATHS.HOME, { replace: true });
   };
   const [hasApiKey, setHasApiKey] = useState(false);
@@ -54,13 +54,17 @@ export default function Header({ currentPage, toggleSidebar }) {
   const getPageTitle = () => {
     switch (currentPage) {
       case "home": return "概览";
-      case "dashboard": return "学习分析";
-      case "planner": return "学习计划";
-      case "examprep": return "考试备考";
+      case "dashboard": return "考研总览仪表盘";
+      case "profile": return "考生档案画像";
+      case "planner": return "AI考研规划";
+      case "today": return "今日学习任务";
+      case "records": return "学习记录与反馈";
+      case "examprep": return "专项刷题与错题本";
+      case "school": return "择校与专业分析";
       case "career": return "职业指导";
       case "projects": return "项目推荐";
       case "settings": return "智能代理设置";
-      default: return "学习成功智能助理";
+      default: return "智能考研规划助理";
     }
   };
 
@@ -113,11 +117,13 @@ export default function Header({ currentPage, toggleSidebar }) {
         {/* Profile indicator */}
         <div className="flex items-center gap-2 border-l border-border-card pl-4">
           <div className="text-right hidden sm:block">
-            <p className="text-xs font-semibold text-text-primary">{studentName}</p>
-            <p className="text-[10px] text-text-muted">学生资料</p>
+            <p className="text-xs font-semibold text-text-primary">
+              {user?.nickname || user?.username || studentName}
+            </p>
+            <p className="text-[10px] text-text-muted">{user?.email || "学生资料"}</p>
           </div>
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs">
-            {studentName.charAt(0).toUpperCase()}
+            {(user?.nickname || user?.username || studentName).charAt(0).toUpperCase()}
           </div>
           <button
             type="button"
